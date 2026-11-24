@@ -1,6 +1,7 @@
 # Presentation design: Which code graph answers which question?
 
-About 60 minutes, 14 content slides plus cover, agenda and wrap-up. Each slide's header answers the question that
+About 60 minutes of slides (14 content slides plus cover, agenda and wrap-up), followed by about 50 minutes running
+the core 3x3 live. Each slide's header answers the question that
 ends the slide before it; that question is shown at the bottom of every slide.
 
 Recurring visual motifs:
@@ -15,7 +16,7 @@ Recurring visual motifs:
 | # | Section | Header (answers the previous question) | Summary | Next question | Min |
 |---|---|---|---|---|---|
 | 0 | Cover | Which code graph answers which question? | Knowledge graphs for agents working across repos; toy organisation; live experiment | What will we cover? | 1 |
-| A | Agenda | From "why graphs" to a live experiment, in five steps | Why → graph types → toy code → three graphs → experiment | Why do we need knowledge graphs? | 1 |
+| A | Agenda | An hour of slides, then 50 minutes running the experiment live | Why → graph types → toy code → three graphs → experiment explained (≈ 60 min), then run the 3x3 live (50 min) | Why do we need knowledge graphs? | 1 |
 | 1 | Why | An agent only knows the code it can see; across repos it sees almost nothing | Real questions cross repos; search floods with matches; reading everything doesn't fit in context | What must be prepared in advance? | 3 |
 | 2 | Why | A knowledge graph computes relationships ahead of time, so the agent can ask instead of read | Nodes (files, functions, symbols, fields) and edges (calls, imports, references, uses), built per repo and linked | Is this new with AI? | 3 |
 | 3 | Why | No: knowledge graphs long predate AI; agents are a new kind of user | Google Knowledge Graph (2012), Wikidata; in code: ctags, IDE indexes, code search; new is who asks | Are all code graphs the same? | 3 |
@@ -24,7 +25,7 @@ Recurring visual motifs:
 | 6 | Types | Yes: you use all three every day | Syntax: outline, ctags, symbol search · Compiler: Go to definition, Find references · Contract: schema registry field usage, Pact, AsyncAPI | Where does each go blind? | 3 |
 | 7 | Types | Each graph's blind spot is another's strength | Syntax can't resolve cross-repo calls; compiler needs a build and one language; contract knows no code; all go stale | How can we see this concretely? | 3 |
 | 8 | Code | A toy organisation: 4 repos, ~60 lines | greet-api (Python, GraphQL, event) · greet-lib (`hello`, `goodbye`) · web-app (`run()`, query) · mail-app (handler) | Why is it a fair test? | 3 |
-| 9 | Code | It contains the traps real codebases have | Name collision, look-alike importers, unbuildable code, cross-language API, stale graph | How do graphs reach the agent? | 3 |
+| 9 | Code | It contains the traps real codebases have | Four traps, one per core question: unbuildable code (T2), two `hello`s and look-alike importers (T3), cross-language API (T4) | How do graphs reach the agent? | 3 |
 | 10 | Graphs | Through tools: published per repo, linked centrally, served over MCP | One `org` MCP server, tools per graph; text results with `repo/file:line`; agent picks the tools; `read_file` only opens files a tool pointed to | What does each graph contain here? | 4 |
 | 11 | Graphs | Syntax: `run() → render()` exists; the `hello` call stops at the package name | 81 nodes, 79 edges; 4 importers point to a dead-end "greet-lib" node; no build needed | Who knows which `hello` is meant? | 4 |
 | 12 | Graphs | SCIP: every name resolves to one exact symbol, if the code builds | `main.ts:1` and `:5` → greet-lib `hello`; local `hello` has 0 references; nobuild: web-app has 0 entries | Who links a Python field to a TS query? | 4 |
