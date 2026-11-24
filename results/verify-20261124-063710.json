@@ -1,0 +1,17 @@
+{
+ "T4/X-G4": {
+  "expected": "correct",
+  "verdicts": [
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 43362,
+  "runs": [
+   "T4-X-G4-r1-v20261124-063710"
+  ],
+  "summaries": [
+   "The agent names web-app/src/queries.graphql:2 (the greeting selection in query Greet) as the breaking location and explicitly states that greet-lib and mail-app are unaffected, matching the key."
+  ]
+ }
+}

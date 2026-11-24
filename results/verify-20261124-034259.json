@@ -1,0 +1,758 @@
+{
+ "T1/X-A0": {
+  "expected": "wrong",
+  "verdicts": [
+   "wrong",
+   "wrong",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 18246,
+  "runs": [
+   "T1-X-A0-r1-v20261124-034259",
+   "T1-X-A0-r2-v20261124-034259",
+   "T1-X-A0-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent declined to answer, saying it couldn't reach the web-app repository, and named neither the render nor the hello call or their definitions.",
+   "The agent gave neither of the two calls (render in web-app/src/render.ts, hello from greet-lib src/index.ts); it only mentioned greet-lib's hello in passing as an example of an external definition, without identifying any call in run(), so under the key's rule this counts as none.",
+   "The agent did not identify either call (render or hello) or their definitions, stating it could not access the web-app repository, so it scores as none correct under the key."
+  ]
+ },
+ "T1/X-A1": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 65110,
+  "runs": [
+   "T1-X-A1-r1-v20261124-034259",
+   "T1-X-A1-r2-v20261124-034259",
+   "T1-X-A1-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent identified both calls, hello (defined in greet-lib repo src/index.ts:1) and render (defined in web-app/src/render.ts:1), with locations matching the key and no invented calls.",
+   "The agent identified both calls: render, defined in web-app/src/render.ts:1, and hello, from greet-lib and defined in greet-lib/src/index.ts:1, which matches the key, and the extra note about local.ts correctly says that function is not called, so it adds no invented call.",
+   "The agent identified both calls, render (web-app/src/render.ts:1) and hello (greet-lib src/index.ts:1, via the greet-lib npm package), matching the key, and it invented no calls; the local.ts hello was correctly excluded."
+  ]
+ },
+ "T1/X-G2": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 78574,
+  "runs": [
+   "T1-X-G2-r1-v20261124-034259",
+   "T1-X-G2-r2-v20261124-034259",
+   "T1-X-G2-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent identified both calls in run() (render, defined in web-app/src/render.ts:1, and hello, imported from greet-lib and defined in greet-lib/src/index.ts:1), matching the key with no invented calls.",
+   "The agent identified both calls on line 5 with correct definitions, render in web-app/src/render.ts:1 and hello from greet-lib at greet-lib/src/index.ts:1, and invented no extra calls.",
+   "The agent identified both calls, render (web-app/src/render.ts line 1) and hello (greet-lib src/index.ts line 1, imported from the greet-lib package), matching the key, and invented no calls."
+  ]
+ },
+ "T1/X-G3": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 65427,
+  "runs": [
+   "T1-X-G3-r1-v20261124-034259",
+   "T1-X-G3-r2-v20261124-034259",
+   "T1-X-G3-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent identifies both calls, render defined at web-app/src/render.ts:1 and hello from greet-lib at greet-lib/src/index.ts:1, which matches the key, and it correctly sets aside the unrelated local hello.",
+   "The agent identified both calls, render (web-app/src/render.ts:1) and hello (greet-lib package, src/index.ts:1), with definitions matching the key, and correctly ruled out the local hello in web-app/src/local.ts.",
+   "The agent identified both calls on line 5, hello (defined in greet-lib/src/index.ts:1, imported from the greet-lib package) and render (defined in web-app/src/render.ts:1), matching the key with no invented calls."
+  ]
+ },
+ "T1/X-G4": {
+  "expected": "wrong",
+  "verdicts": [
+   "wrong",
+   "wrong",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 92419,
+  "runs": [
+   "T1-X-G4-r1-v20261124-034259",
+   "T1-X-G4-r2-v20261124-034259",
+   "T1-X-G4-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent identified none of the calls in run() (render or hello) or their definitions, declining to answer instead, which under the key's rule counts as none.",
+   "The agent named none of the calls in run(): neither render (web-app/src/render.ts) nor hello (greet-lib src/index.ts) was identified, so its answer has zero correct calls.",
+   "The agent declined to answer and identified none of the calls (render, hello) or where they are defined, so it meets the key's 'none' criterion."
+  ]
+ },
+ "T1/X-A5": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 69097,
+  "runs": [
+   "T1-X-A5-r1-v20261124-034259",
+   "T1-X-A5-r2-v20261124-034259",
+   "T1-X-A5-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent identified both calls in run(): render, defined at web-app/src/render.ts:1, and hello, imported from greet-lib and defined at greet-lib/src/index.ts:1, which matches the key, and it invented no extra calls.",
+   "The agent identified both calls on line 5, render (defined at web-app/src/render.ts:1) and hello (from greet-lib, defined at greet-lib/src/index.ts:1), which matches the key, and it did not add any invented calls.",
+   "The agent identified both calls on line 5, render (defined in web-app/src/render.ts:1) and hello (from the greet-lib package, greet-lib/src/index.ts:1), which matches the key, and it invented no calls."
+  ]
+ },
+ "T2/X-A0": {
+  "expected": "wrong",
+  "verdicts": [
+   "wrong",
+   "wrong",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 18266,
+  "runs": [
+   "T2-X-A0-r1-v20261124-034259",
+   "T2-X-A0-r2-v20261124-034259",
+   "T2-X-A0-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent gave neither call (render in web-app/src/render.ts, hello from greet-lib's src/index.ts) and said the web-app repository was not available.",
+   "The agent did not identify either call (render or hello) or their definitions, reporting instead that the web-app repository was inaccessible, so under the key's scoring rule (none = wrong) the answer is wrong.",
+   "The agent named neither call (render nor hello) or where either is defined, and said it couldn't access the web-app repository, so under the key's rule it gets zero of two calls."
+  ]
+ },
+ "T2/X-A1": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 64253,
+  "runs": [
+   "T2-X-A1-r1-v20261124-034259",
+   "T2-X-A1-r2-v20261124-034259",
+   "T2-X-A1-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent names both calls and gives the right definition locations: render at web-app/src/render.ts:1 and hello from the greet-lib package at greet-lib/src/index.ts:1, which matches the key.",
+   "The agent identified both calls: render, defined at web-app/src/render.ts:1, and hello, from the greet-lib package at greet-lib/src/index.ts:1. Both match the key.",
+   "The agent identified both calls, render (web-app/src/render.ts:1) and hello (greet-lib src/index.ts:1), with definitions matching the key."
+  ]
+ },
+ "T2/X-G2": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 67251,
+  "runs": [
+   "T2-X-G2-r1-v20261124-034259",
+   "T2-X-G2-r2-v20261124-034259",
+   "T2-X-G2-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent identified both calls, render (web-app/src/render.ts line 1) and hello (greet-lib src/index.ts line 1 via the greet-lib package), with definitions matching the key.",
+   "The agent named both calls: render, defined in web-app/src/render.ts:1, and hello, from the greet-lib package at greet-lib/src/index.ts:1, which matches the key.",
+   "The agent identified both calls, hello (greet-lib src/index.ts:1) and render (web-app/src/render.ts:1), with their correct definition locations, as the key requires."
+  ]
+ },
+ "T2/X-G3": {
+  "expected": "wrong",
+  "verdicts": [
+   "wrong",
+   "wrong",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 114640,
+  "runs": [
+   "T2-X-G3-r1-v20261124-034259",
+   "T2-X-G3-r2-v20261124-034259",
+   "T2-X-G3-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent gave no calls from run(): it never identified render (web-app/src/render.ts) or hello (greet-lib src/index.ts) as being called by run(), and it explicitly said the index does not show web-app calling hello.",
+   "The agent did not identify either call made by run() (render or hello) as calls from run(); it only noted hello's definition in greet-lib without linking it to run(), so neither call with its definition is given.",
+   "The agent named neither of the two calls run() makes (render in web-app/src/render.ts and hello from greet-lib), so it gets no credit under the key's scoring rule."
+  ]
+ },
+ "T2/X-G4": {
+  "expected": "wrong",
+  "verdicts": [
+   "wrong",
+   "wrong",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 119399,
+  "runs": [
+   "T2-X-G4-r1-v20261124-034259",
+   "T2-X-G4-r2-v20261124-034259",
+   "T2-X-G4-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent identified neither of the two calls in run() (render in web-app/src/render.ts and hello from greet-lib src/index.ts), and said it could not answer.",
+   "The agent identified none of the calls in run() (render or hello) or their definitions, reporting only that it could not access web-app/src/main.ts.",
+   "The agent did not name either of run()'s calls (render or hello) or where they are defined, and reported that it could not answer."
+  ]
+ },
+ "T2/X-A5": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 85178,
+  "runs": [
+   "T2-X-A5-r1-v20261124-034259",
+   "T2-X-A5-r2-v20261124-034259",
+   "T2-X-A5-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent identified both calls from run() with correct definitions: render at web-app/src/render.ts:1 and hello from the greet-lib package at greet-lib/src/index.ts:1, matching the key.",
+   "The agent correctly identifies both calls in run(): render, defined at web-app/src/render.ts line 1, and hello, from the greet-lib package at greet-lib/src/index.ts line 1, which matches the key.",
+   "The agent identified both calls from run(): render (web-app/src/render.ts:1) and hello (from the greet-lib package, greet-lib/src/index.ts:1), with correct definition locations matching the key."
+  ]
+ },
+ "T3/X-A0": {
+  "expected": "wrong",
+  "verdicts": [
+   "wrong",
+   "wrong",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 18460,
+  "runs": [
+   "T3-X-A0-r1-v20261124-034259",
+   "T3-X-A0-r2-v20261124-034259",
+   "T3-X-A0-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent listed no uses; it gave no confirmed repo/file:line entries and only guessed that web-app is a likely consumer, so it missed both web-app/src/main.ts lines 1 and 5 that the key requires.",
+   "The agent listed no uses of greet-lib's hello (it only suggested web-app as a likely consumer without naming web-app/src/main.ts lines 1 and 5), which the key scores as wrong.",
+   "The agent listed no uses of hello in other repositories (it reported it could not access them), so it omits both web-app/src/main.ts lines 1 and 5, which the key scores as wrong."
+  ]
+ },
+ "T3/X-A1": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 43245,
+  "runs": [
+   "T3-X-A1-r1-v20261124-034259",
+   "T3-X-A1-r2-v20261124-034259",
+   "T3-X-A1-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent lists exactly web-app/src/main.ts lines 1 and 5 as uses and correctly excludes the trap files. It has one minor inconsistency: it first says local.ts doesn't import from greet-lib, then later acknowledges its goodbye import.",
+   "The agent listed exactly web-app/src/main.ts:1 (import) and web-app/src/main.ts:5 (call) as the uses of greet-lib's hello, and it correctly ruled out the trap files footer.ts, logout.ts and local.ts, including local.ts's own hello.",
+   "The agent listed exactly web-app/src/main.ts lines 1 and 5 as uses, and correctly excluded local.ts's own hello and the Python string, so it made no trap claims."
+  ]
+ },
+ "T3/X-G2": {
+  "expected": "wrong",
+  "verdicts": [
+   "wrong",
+   "correct",
+   "correct"
+  ],
+  "pass": false,
+  "invalid": 0,
+  "median_tokens_in": 83320,
+  "runs": [
+   "T3-X-G2-r1-v20261124-034259",
+   "T3-X-G2-r2-v20261124-034259",
+   "T3-X-G2-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent listed no uses, missing both web-app/src/main.ts lines 1 and 5; under the key a list with nothing in it is graded wrong, though the agent did correctly decline to count local.ts's own hello.",
+   "The agent confirms the use at web-app/src/main.ts (import at line 1, call at line 5) and lists footer.ts, logout.ts and local.ts only as unverified imports, not as uses of hello, so it makes no wrong claim.",
+   "The agent's confirmed answer is exactly web-app/src/main.ts lines 1 (import) and 5 (call). The trap files appear only as unverified open questions, each saying it is unknown whether they call hello, so they are not asserted as uses; the 'Probably used' heading leans the wrong way but makes no definite claim."
+  ]
+ },
+ "T3/X-G3": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 54115,
+  "runs": [
+   "T3-X-G3-r1-v20261124-034259",
+   "T3-X-G3-r2-v20261124-034259",
+   "T3-X-G3-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent lists exactly web-app/src/main.ts lines 1 and 5 and explicitly excludes the trap local.ts hello, which matches the key.",
+   "The agent listed exactly web-app/src/main.ts:1 (import) and web-app/src/main.ts:5 (call in run()), and explicitly excluded the local.ts trap without listing any trap file as a use.",
+   "The agent listed exactly web-app/src/main.ts:1 (import) and web-app/src/main.ts:5 (call in run()), and it explicitly avoided the trap of local.ts's own hello without listing any trap files."
+  ]
+ },
+ "T3/X-G4": {
+  "expected": "wrong",
+  "verdicts": [
+   "wrong",
+   "wrong",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 32875,
+  "runs": [
+   "T3-X-G4-r1-v20261124-034259",
+   "T3-X-G4-r2-v20261124-034259",
+   "T3-X-G4-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent listed no uses of hello and did not identify web-app/src/main.ts lines 1 and 5, which the key scores as wrong when nothing is listed.",
+   "The agent listed no uses of greet-lib's hello, so it missed web-app/src/main.ts lines 1 and 5 (it said web-app was never checked); under the key, listing nothing scores as wrong.",
+   "The agent listed no uses at all and missed both web-app/src/main.ts:1 (import) and web-app/src/main.ts:5 (call); under the key's scoring rule, listing nothing counts as wrong."
+  ]
+ },
+ "T3/X-A5": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 59502,
+  "runs": [
+   "T3-X-A5-r1-v20261124-034259",
+   "T3-X-A5-r2-v20261124-034259",
+   "T3-X-A5-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent lists exactly web-app/src/main.ts lines 1 and 5 as the uses of greet-lib's hello, and it correctly leaves out the trap files footer.ts, logout.ts and local.ts, including local.ts's own hello.",
+   "The agent lists exactly web-app/src/main.ts lines 1 and 5 as the uses of greet-lib's hello and correctly excludes the trap files (local.ts's own hello and the goodbye-only imports in footer.ts, logout.ts and local.ts).",
+   "The agent listed exactly web-app/src/main.ts lines 1 and 5 as uses of greet-lib's hello, and it correctly excluded the trap files (local.ts, logout.ts, footer.ts) as non-uses."
+  ]
+ },
+ "T4/X-A0": {
+  "expected": "wrong",
+  "verdicts": [
+   "partial",
+   "partial",
+   "partial"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 28915,
+  "runs": [
+   "T4-X-A0-r1-v20261124-034259",
+   "T4-X-A0-r2-v20261124-034259",
+   "T4-X-A0-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent names web-app as the repo likely to break but gives no file:line (web-app/src/queries.graphql:2), and it does not call both greet-lib and mail-app unaffected: it explicitly says mail-app should not be called unaffected.",
+   "The agent named web-app as the most likely repo to break but gave no file or line (web-app/src/queries.graphql:2), and it did not clearly call greet-lib and mail-app unaffected (it suggested mail-app might be affected), so it gets partial credit under the key's rule.",
+   "The agent named web-app as the likely breakage but gave no file or line, did not cite web-app/src/queries.graphql:2, and did not clearly call mail-app unaffected (it said mail-app would stop receiving events), which matches the key's partial rule."
+  ]
+ },
+ "T4/X-A1": {
+  "expected": "correct",
+  "verdicts": [
+   "wrong",
+   "wrong",
+   "correct"
+  ],
+  "pass": false,
+  "invalid": 0,
+  "median_tokens_in": 70737,
+  "runs": [
+   "T4-X-A1-r1-v20261124-034259",
+   "T4-X-A1-r2-v20261124-034259",
+   "T4-X-A1-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent correctly cites web-app/src/queries.graphql:1-3 and says greet-lib is unaffected, but it claims mail-app breaks at runtime, while the key says mail-app is unaffected; that fails the 'correct' condition and does not fit the key's definition of 'partial'.",
+   "The agent correctly cites web-app/src/queries.graphql:2 but says mail-app breaks, while the key says it is unaffected; the answer meets neither the 'correct' condition nor the 'partial' condition (web-app named without the file), so the rule makes it wrong.",
+   "The agent names web-app/src/queries.graphql:2 as the breaking location and explicitly states that greet-lib and mail-app are unaffected, matching the key's criteria for correct."
+  ]
+ },
+ "T4/X-G2": {
+  "expected": "wrong",
+  "verdicts": [
+   "wrong",
+   "wrong",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 120906,
+  "runs": [
+   "T4-X-G2-r1-v20261124-034259",
+   "T4-X-G2-r2-v20261124-034259",
+   "T4-X-G2-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent did not identify web-app/src/queries.graphql line 2 as breaking (it called web-app 'not confirmed'), and it flagged mail-app as likely affected instead of unaffected, contradicting the key.",
+   "The agent did not identify web-app/src/queries.graphql:2 (it said web-app was 'not determined'), and it wrongly called mail-app affected rather than unaffected. It named neither the web-app file nor the web-app break, so it meets neither the correct nor the partial criterion.",
+   "The agent says web-app is not affected and never names web-app/src/queries.graphql, which is the break in the key; it also calls mail-app unknown, not unaffected, so it meets neither the correct nor the partial criteria."
+  ]
+ },
+ "T4/X-G3": {
+  "expected": "wrong",
+  "verdicts": [
+   "wrong",
+   "wrong",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 112008,
+  "runs": [
+   "T4-X-G3-r1-v20261124-034259",
+   "T4-X-G3-r2-v20261124-034259",
+   "T4-X-G3-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent did not identify web-app/src/queries.graphql:2 as breaking (it said no break was found in web-app) and it called mail-app likely affected instead of unaffected, so it contradicts the key on both points.",
+   "The agent does not name web-app/src/queries.graphql or confirm web-app breaks (it says web-app is 'not confirmed unaffected' and couldn't see its query documents), and it calls mail-app 'at risk' rather than unaffected, so it meets neither the correct nor the partial criteria.",
+   "The agent does not name web-app/src/queries.graphql or line 2 and says it found no dependency in web-app, so the breakage is missed; it also calls mail-app indirectly affected instead of unaffected."
+  ]
+ },
+ "T4/X-G4": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 43205,
+  "runs": [
+   "T4-X-G4-r1-v20261124-034259",
+   "T4-X-G4-r2-v20261124-034259",
+   "T4-X-G4-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent names web-app/src/queries.graphql:2 as the breaking location and correctly identifies greet-lib and mail-app as unaffected, matching the key's criteria for correct.",
+   "The agent names web-app/src/queries.graphql (lines 1-3, which covers line 2 within \u00b11) as the breaking usage and explicitly states that greet-lib and mail-app are unaffected, which meets the key's criteria for correct.",
+   "The agent names web-app/src/queries.graphql:2 as the breaking usage and correctly states that greet-lib and mail-app are unaffected."
+  ]
+ },
+ "T4/X-A5": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 45568,
+  "runs": [
+   "T4-X-A5-r1-v20261124-034259",
+   "T4-X-A5-r2-v20261124-034259",
+   "T4-X-A5-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent names web-app/src/queries.graphql at lines 1-2, which falls within line 2 \u00b11, as the breaking Greet query, and it states that greet-lib and mail-app are unaffected, so it meets the key's rule for correct.",
+   "The agent names web-app/src/queries.graphql:2 (the Greet query selecting greeting) as the breaking reference and states that greet-lib and mail-app are unaffected, which matches the key.",
+   "The agent names web-app/src/queries.graphql:2 as the breaking usage and says greet-lib and mail-app are unaffected, which matches the key's criteria for correct."
+  ]
+ },
+ "T5/X-A0": {
+  "expected": "wrong",
+  "verdicts": [
+   "partial",
+   "partial",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 28504,
+  "runs": [
+   "T5-X-A0-r1-v20261124-034259",
+   "T5-X-A0-r2-v20261124-034259",
+   "T5-X-A0-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent names mail-app as the consumer but gives no webhooks.ts registration or sendWelcomeMail handler, which the key scores as partial.",
+   "The agent names mail-app as the likely consumer of USER_GREETED, but does not confirm it and gives neither mail-app/src/webhooks.ts:10 nor the sendWelcomeMail handler, which fits the key's 'mail-app without the handler' case.",
+   "The agent never asserts that mail-app reacts to USER_GREETED; it only mentions mail-app as an unconfirmed candidate and gives no mail-app/src/webhooks.ts registration or sendWelcomeMail handler, so it fails the key's criteria."
+  ]
+ },
+ "T5/X-A1": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 90551,
+  "runs": [
+   "T5-X-A1-r1-v20261124-034259",
+   "T5-X-A1-r2-v20261124-034259",
+   "T5-X-A1-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent identifies only mail-app, citing mail-app/src/webhooks.ts:10 registering sendWelcomeMail for USER_GREETED and mail-app/src/mail.ts:1 logging a welcome message, and correctly excludes web-app and greet-lib, matching the key.",
+   "The agent identifies mail-app as the only reacting repo, citing mail-app/src/webhooks.ts:10 registering sendWelcomeMail and mail-app/src/mail.ts:1 where it logs a welcome message, and correctly notes web-app and greet-lib do not react.",
+   "The agent named mail-app as the only reactor, citing mail-app/src/webhooks.ts:10 registering sendWelcomeMail and mail-app/src/mail.ts:1 where it logs a welcome message, and correctly said web-app and greet-lib do not react."
+  ]
+ },
+ "T5/X-G2": {
+  "expected": "wrong",
+  "verdicts": [
+   "wrong",
+   "correct",
+   "partial"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 100305,
+  "runs": [
+   "T5-X-G2-r1-v20261124-034259",
+   "T5-X-G2-r2-v20261124-034259",
+   "T5-X-G2-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent did not identify mail-app as a consumer: it explicitly stated it couldn't confirm any reacting repository and gave no mail-app webhooks.ts registration or sendWelcomeMail handler, so it doesn't meet the key's criteria for correct or partial.",
+   "The agent names mail-app as the only reactor and cites mail-app/src/webhooks.ts:10 registering sendWelcomeMail for USER_GREETED, plus mail-app/src/mail.ts:1 logging a welcome message, which matches the key.",
+   "The agent names mail-app as the most likely consumer but only tentatively, and it gives no webhooks.ts registration, no sendWelcomeMail handler and no file:line, which fits the key's 'mail-app without the handler' tier."
+  ]
+ },
+ "T5/X-G3": {
+  "expected": "wrong",
+  "verdicts": [
+   "wrong",
+   "correct",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 83885,
+  "runs": [
+   "T5-X-G3-r1-v20261124-034259",
+   "T5-X-G3-r2-v20261124-034259",
+   "T5-X-G3-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent named no confirmed consumer; it only flagged mail-app as an unverified guess from CLAUDE.md, gave no mail-app file:line, and did not identify webhooks.ts or sendWelcomeMail, so it falls under 'otherwise wrong' in the key.",
+   "The agent identifies mail-app as the only reactor, cites mail-app/src/webhooks.ts:10 registering sendWelcomeMail for USER_GREETED, and gives sendWelcomeMail at mail-app/src/mail.ts:1 logging a welcome message; it also says web-app and greet-lib do not react, which matches the key.",
+   "The agent did not identify mail-app as reacting to USER_GREETED (it explicitly said it found no handler there) and gave no mail-app/src/webhooks.ts or sendWelcomeMail reference, so it fails the key's criteria."
+  ]
+ },
+ "T5/X-G4": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 55269,
+  "runs": [
+   "T5-X-G4-r1-v20261124-034259",
+   "T5-X-G4-r2-v20261124-034259",
+   "T5-X-G4-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent names mail-app as the only subscriber, citing mail-app/src/webhooks.ts:10 registering sendWelcomeMail (in mail-app/src/mail.ts), and correctly excludes web-app and greet-lib, which meets the key's criteria for correct.",
+   "The agent correctly names mail-app as the only reactor, citing mail-app/src/webhooks.ts:10 registering sendWelcomeMail for USER_GREETED, and excludes web-app and greet-lib; it could not verify the handler body (which only logs a welcome message), but the key's scoring rule does not require that detail.",
+   "The agent names mail-app as the only reactor and cites mail-app/src/webhooks.ts:10 registering sendWelcomeMail for USER_GREETED, which meets the key's rule for correct, even though it could not open mail.ts to confirm that the handler only logs a welcome message."
+  ]
+ },
+ "T5/X-A5": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 80210,
+  "runs": [
+   "T5-X-A5-r1-v20261124-034259",
+   "T5-X-A5-r2-v20261124-034259",
+   "T5-X-A5-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent identifies mail-app as the only reactor, citing mail-app/src/webhooks.ts:10 registering sendWelcomeMail and mail-app/src/mail.ts:1 where it logs a welcome message, and correctly excludes web-app and greet-lib.",
+   "The agent correctly identifies mail-app as the only reacting repository and gives mail-app/src/webhooks.ts:10 registering sendWelcomeMail for USER_GREETED and mail-app/src/mail.ts:1 logging a welcome message; it also correctly states that web-app and greet-lib do not react, which matches the key.",
+   "The agent named mail-app as the only subscriber, cited mail-app/src/webhooks.ts:10 registering sendWelcomeMail and mail-app/src/mail.ts:1 where it logs a welcome message, and stated that web-app and greet-lib do not react, which matches the key."
+  ]
+ },
+ "T6/X-A0": {
+  "expected": "wrong",
+  "verdicts": [
+   "partial",
+   "partial",
+   "partial"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 28897,
+  "runs": [
+   "T6-X-A0-r1-v20261124-034259",
+   "T6-X-A0-r2-v20261124-034259",
+   "T6-X-A0-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent identified web-app as the likely repo to break and greet-lib and mail-app as likely unaffected, but it never named web-app/src/farewell.graphql:2, which the key requires for a correct grade; it also didn't claim web-app was unaffected, so it isn't wrong.",
+   "The agent named web-app as the likely breakage and said greet-lib and mail-app are unaffected, but it did not identify web-app/src/farewell.graphql:2 and gave no repo/file:line entries for other repositories, so it misses the key's required finding without making the 'nothing breaks' error.",
+   "The agent says web-app is the repo most likely to break and does not claim it is unaffected, but it never names web-app/src/farewell.graphql:2; it leaves the other repos unverified and gives only a guess based on repo descriptions."
+  ]
+ },
+ "T6/X-A1": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 55846,
+  "runs": [
+   "T6-X-A1-r1-v20261124-034259",
+   "T6-X-A1-r2-v20261124-034259",
+   "T6-X-A1-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent names web-app/src/farewell.graphql:2 (query Bye) as breaking and correctly lists greet-lib and mail-app as unaffected, matching the key; its hedge about build-time detection does not contradict the finding.",
+   "The agent names web-app/src/farewell.graphql:2 as the file that breaks because it selects farewell in query Bye, and it correctly lists greet-lib and mail-app as unaffected, which matches the key.",
+   "The agent names web-app/src/farewell.graphql:2 as breaking and correctly lists greet-lib and mail-app as unaffected. Its hedge that the file may be dead code doesn't contradict the key."
+  ]
+ },
+ "T6/X-G2": {
+  "expected": "wrong",
+  "verdicts": [
+   "partial",
+   "partial",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 87836,
+  "runs": [
+   "T6-X-G2-r1-v20261124-034259",
+   "T6-X-G2-r2-v20261124-034259",
+   "T6-X-G2-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent never names web-app/src/farewell.graphql:2 as the breakage, but it avoids the stale-graph failure: it says the empty graph result proves nothing, flags web-app as a likely break if it has a query using farewell, and correctly infers greet-lib and mail-app are unaffected.",
+   "The agent never names web-app/src/farewell.graphql:2 as the breaking code, but it does not fall into the stale-graph failure: it flags web-app as the likely-affected, unverified consumer rather than calling it unaffected, and it correctly says greet-lib and mail-app are unaffected.",
+   "The agent never names web-app/src/farewell.graphql. It concludes that nothing it could verify would break and flags web-app only as unverified, which matches the key's stale-graph failure mode rather than identifying the actual breakage."
+  ]
+ },
+ "T6/X-G3": {
+  "expected": "wrong",
+  "verdicts": [
+   "partial",
+   "wrong",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 128157,
+  "runs": [
+   "T6-X-G3-r1-v20261124-034259",
+   "T6-X-G3-r2-v20261124-034259",
+   "T6-X-G3-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent did not identify web-app/src/farewell.graphql as the breaking file, but it explicitly marked web-app as unverified rather than unaffected and recommended grepping web-app for 'farewell', so it avoids the stale-graph failure without finding the breakage.",
+   "The agent reports no breaking usages outside greet-api and calls web-app unaffected. It never names web-app/src/farewell.graphql, which the key identifies as the breaking file, so this is the stale-graph failure even with the caveats it adds.",
+   "The agent concluded nothing breaks and explicitly marked web-app as unaffected, missing web-app/src/farewell.graphql:2 (the stale-graph failure), even though it flagged a possible gap for query strings."
+  ]
+ },
+ "T6/X-G4": {
+  "expected": "wrong",
+  "verdicts": [
+   "wrong",
+   "wrong",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 31659,
+  "runs": [
+   "T6-X-G4-r1-v20261124-034259",
+   "T6-X-G4-r2-v20261124-034259",
+   "T6-X-G4-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent says web-app is unaffected and nothing breaks, missing the web-app/src/farewell.graphql:2 query Bye that selects farewell, which is exactly the stale-graph failure the key marks as wrong.",
+   "The agent claims no other repository breaks and explicitly says web-app is unaffected, missing web-app/src/farewell.graphql line 2, which is exactly the stale-graph failure the key marks as wrong.",
+   "The agent claims nothing outside this repo breaks and that web-app does not select Query.farewell, missing web-app/src/farewell.graphql:2 (the stale-graph failure the key marks wrong), although it does note it did not independently verify the graph."
+  ]
+ },
+ "T6/X-A5": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 81198,
+  "runs": [
+   "T6-X-A5-r1-v20261124-034259",
+   "T6-X-A5-r2-v20261124-034259",
+   "T6-X-A5-r3-v20261124-034259"
+  ],
+  "summaries": [
+   "The agent names web-app/src/farewell.graphql:2 (query Bye) as the breaking location and correctly says greet-lib and mail-app are unaffected, matching the key.",
+   "The agent names web-app/src/farewell.graphql:2 (query Bye selecting farewell) as the breaking consumer and correctly says greet-lib and mail-app are unaffected, matching the key.",
+   "The agent names web-app/src/farewell.graphql:2 as the breaking reference in query Bye and states that greet-lib and mail-app are unaffected, which matches the key."
+  ]
+ }
+}

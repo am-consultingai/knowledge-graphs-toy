@@ -1,0 +1,4 @@
+{
+  "description": "own repo + code search + open files + all three graphs",
+  "mcp_layers": "search,read,l2,l3,l4"
+}

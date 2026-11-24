@@ -1,0 +1,128 @@
+{
+ "T3/X-A0": {
+  "expected": "wrong",
+  "verdicts": [
+   "wrong",
+   "wrong",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 18410,
+  "runs": [
+   "T3-X-A0-r1-v20261124-033246",
+   "T3-X-A0-r2-v20261124-033246",
+   "T3-X-A0-r3-v20261124-033246"
+  ],
+  "summaries": [
+   "The agent listed no uses of greet-lib's hello and did not identify web-app/src/main.ts lines 1 and 5, which the key's scoring rule grades as wrong (it says it could not access the other repos).",
+   "The agent listed no uses in other repositories, missing both web-app/src/main.ts lines 1 and 5, and only reported the definition within greet-lib itself.",
+   "The agent listed no uses in other repositories; it reported only the definition in greet-lib/src/index.ts:1 and did not identify web-app/src/main.ts lines 1 and 5, so under the key's rule (listing nothing = wrong) it is wrong."
+  ]
+ },
+ "T3/X-A1": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 43396,
+  "runs": [
+   "T3-X-A1-r1-v20261124-033246",
+   "T3-X-A1-r2-v20261124-033246",
+   "T3-X-A1-r3-v20261124-033246"
+  ],
+  "summaries": [
+   "The agent listed exactly web-app/src/main.ts:1 and :5 as uses of greet-lib's hello and explicitly excluded the trap files (footer.ts, logout.ts, local.ts), matching the key.",
+   "The agent listed exactly web-app/src/main.ts lines 1 and 5 as uses of greet-lib's hello and explicitly excluded the trap files (footer.ts, logout.ts, local.ts) rather than claiming them as uses.",
+   "The agent listed exactly web-app/src/main.ts lines 1 and 5 as uses of greet-lib's hello, and it correctly ruled out every trap file (footer.ts, logout.ts, local.ts) instead of listing them as uses."
+  ]
+ },
+ "T3/X-G2": {
+  "expected": "wrong",
+  "verdicts": [
+   "partial",
+   "correct",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 96926,
+  "runs": [
+   "T3-X-G2-r1-v20261124-033246",
+   "T3-X-G2-r2-v20261124-033246",
+   "T3-X-G2-r3-v20261124-033246"
+  ],
+  "summaries": [
+   "The agent correctly identifies web-app/src/main.ts (import at line 1, call at line 5) and makes no false claim, but it leaves footer.ts, logout.ts and local.ts open as possible uses instead of ruling them out, so its answer is not exactly 'both lines and nothing else'.",
+   "The agent's confirmed list is exactly web-app/src/main.ts:1 and :5; it mentions footer.ts, logout.ts and local.ts only as unverified greet-lib importers and does not claim them as uses of hello (it correctly calls local.ts's hello a different function), so it makes no trap claim.",
+   "The agent confirmed no uses of greet-lib's hello and never identified web-app/src/main.ts lines 1 and 5, which the key's scoring rule treats as wrong, even though it correctly excluded local.ts and made no false trap claims."
+  ]
+ },
+ "T3/X-G3": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 53823,
+  "runs": [
+   "T3-X-G3-r1-v20261124-033246",
+   "T3-X-G3-r2-v20261124-033246",
+   "T3-X-G3-r3-v20261124-033246"
+  ],
+  "summaries": [
+   "The agent listed exactly web-app/src/main.ts lines 1 and 5, and it explicitly left out the local.ts hello trap, which matches the key.",
+   "The agent lists exactly web-app/src/main.ts:1 (import) and web-app/src/main.ts:5 (call) as the uses of greet-lib's hello, and it explicitly excludes the local.ts hello trap without claiming it as a use.",
+   "The agent lists exactly web-app/src/main.ts lines 1 and 5 as uses, and mentions local.ts's own hello only to exclude it, which matches the key."
+  ]
+ },
+ "T3/X-G4": {
+  "expected": "wrong",
+  "verdicts": [
+   "wrong",
+   "wrong",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 46379,
+  "runs": [
+   "T3-X-G4-r1-v20261124-033246",
+   "T3-X-G4-r2-v20261124-033246",
+   "T3-X-G4-r3-v20261124-033246"
+  ],
+  "summaries": [
+   "The agent reported no uses of hello and listed neither web-app/src/main.ts:1 nor main.ts:5, which the key scores as wrong despite the honest caveat about incomplete search.",
+   "The agent listed no uses of greet-lib's hello, so it missed both required entries, web-app/src/main.ts:1 (import) and web-app/src/main.ts:5 (call in run()); under the key, listing nothing counts as wrong.",
+   "The agent listed no uses at all, so it missed both of the required web-app/src/main.ts lines (1 and 5); under the key, listing nothing is graded wrong, even though the agent was honest about the limits of its access."
+  ]
+ },
+ "T3/X-A5": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 71820,
+  "runs": [
+   "T3-X-A5-r1-v20261124-033246",
+   "T3-X-A5-r2-v20261124-033246",
+   "T3-X-A5-r3-v20261124-033246"
+  ],
+  "summaries": [
+   "The agent lists exactly web-app/src/main.ts:1 (import) and :5 (call in run()) as the uses of greet-lib's hello, and correctly says local.ts's own hello is not a use, so no trap file is claimed.",
+   "The agent listed exactly web-app/src/main.ts lines 1 and 5 as uses of greet-lib's hello and explicitly excluded the trap files (footer.ts, logout.ts, local.ts) rather than listing them as uses.",
+   "The agent listed exactly web-app/src/main.ts lines 1 and 5 as the uses of greet-lib's hello and explicitly excluded every trap file (footer.ts, logout.ts, local.ts), matching the key's criteria for a correct answer."
+  ]
+ }
+}

@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+"""Containment check for the knowledge-graph experiment (plan section 2.3).
+
+Usage:
+  check-containment snapshot <name>          record a snapshot of the watched areas
+  check-containment compare <before> <after> report differences, minus known operator paths
+  check-containment noise <before> <after>   write every changed path to operator-paths.txt
+
+Watched: the real home directory (minus the project), /tmp, /var/tmp, /dev/shm,
+/run/user/<uid>. Each file is recorded with size, mtime and inode, so new, changed
+and deleted files are all caught. ~/.claude.json is compared by its JSON keys.
+
+This script only writes inside <project>/.sandbox/containment/.
+"""
+import gzip
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+PROJECT = Path(__file__).resolve().parent.parent
+HOME = Path("/home/am")  # the real home, not the sandbox one
+UID = os.getuid()
+ROOTS = [str(HOME), "/tmp", "/var/tmp", "/dev/shm", f"/run/user/{UID}"]
+STORE = PROJECT / ".sandbox" / "containment"
+OPERATOR = STORE / "operator-paths.txt"
+CLAUDE_JSON = HOME / ".claude.json"
+SUSPECT_SUBSTRINGS = ["/knowledge-graphs/repos", "/knowledge-graphs/.sandbox"]
+
+
+def snapshot(name: str) -> None:
+    STORE.mkdir(parents=True, exist_ok=True)
+    out = STORE / f"{name}.lst.gz"
+    cmd = ["find", *ROOTS, "-xdev", "-path", str(PROJECT), "-prune", "-o",
+           "-printf", r"%p\t%s\t%T@\t%i\n"]
+    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    lines = sorted(proc.stdout.decode("utf-8", "surrogateescape").splitlines())
+    with gzip.open(out, "wt", encoding="utf-8", errors="surrogateescape") as f:
+        f.write("\n".join(lines) + "\n")
+    keys = {}
+    try:
+        data = json.loads(CLAUDE_JSON.read_text())
+        keys = {"top": sorted(data.keys()), "projects": sorted((data.get("projects") or {}).keys())}
+    except Exception as e:  # file mid-rewrite or missing
+        keys = {"error": str(e)}
+    (STORE / f"{name}.claude-json-keys.json").write_text(json.dumps(keys, indent=1))
+    print(f"snapshot {name}: {len(lines)} entries -> {out}")
+
+
+def load(name: str) -> dict:
+    d = {}
+    with gzip.open(STORE / f"{name}.lst.gz", "rt", encoding="utf-8", errors="surrogateescape") as f:
+        for line in f:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) == 4:
+                d[parts[0]] = tuple(parts[1:])
+    return d
+
+
+def diff(a: str, b: str):
+    A, B = load(a), load(b)
+    new = sorted(set(B) - set(A))
+    gone = sorted(set(A) - set(B))
+    changed = sorted(p for p in set(A) & set(B) if A[p] != B[p])
+    return new, gone, changed
+
+
+def operator_paths() -> set:
+    if not OPERATOR.exists():
+        return set()
+    return {l.strip() for l in OPERATOR.read_text().splitlines()
+            if l.strip() and not l.startswith("#") and not l.startswith("prefix ")}
+
+
+def operator_prefixes() -> list:
+    """Narrow prefix rules for operator files whose names rotate (see operator-paths.txt)."""
+    if not OPERATOR.exists():
+        return []
+    return [l[len("prefix "):].strip() for l in OPERATOR.read_text().splitlines() if l.startswith("prefix ")]
+
+
+def compare(a: str, b: str) -> int:
+    new, gone, changed = diff(a, b)
+    known = operator_paths()
+    prefixes = operator_prefixes()
+    fails, noise = [], []
+    for kind, paths in (("NEW", new), ("DELETED", gone), ("CHANGED", changed)):
+        for p in paths:
+            # Directories whose mtime changes because a known file inside changed are noise too.
+            if p in known or any(p.startswith(x) for x in prefixes) or any(k.startswith(p.rstrip("/") + "/") for k in known if kind == "CHANGED"):
+                noise.append((kind, p))
+            else:
+                fails.append((kind, p))
+    # New ~/.claude/projects/<slug> folders are always failures, even if noted as noise.
+    for kind, p in noise[:]:
+        if kind == "NEW" and p.startswith(str(HOME / ".claude/projects/")) and p.count("/") == 5:
+            noise.remove((kind, p)); fails.append((kind, p))
+    # ~/.claude.json: any project key pointing into the experiment is a failure.
+    ka = json.loads((STORE / f"{a}.claude-json-keys.json").read_text())
+    kb = json.loads((STORE / f"{b}.claude-json-keys.json").read_text())
+    for key in sorted(set(kb.get("projects", [])) - set(ka.get("projects", []))):
+        tag = "CLAUDE.JSON PROJECT"
+        if any(s in key for s in SUSPECT_SUBSTRINGS):
+            fails.append((tag, key))
+        else:
+            fails.append((tag + " (new, check)", key))
+    for key in sorted(set(kb.get("top", [])) - set(ka.get("top", []))):
+        fails.append(("CLAUDE.JSON KEY (new, check)", key))
+    print(f"compare {a} -> {b}: {len(fails)} unexplained, {len(noise)} known operator noise")
+    for kind, p in fails:
+        print(f"  FAIL {kind}: {p}")
+    return 1 if fails else 0
+
+
+def noise(a: str, b: str) -> None:
+    new, gone, changed = diff(a, b)
+    paths = sorted(set(new) | set(gone) | set(changed))
+    header = f"# Known operator paths, from the idle baseline {a} -> {b}. Exact paths only.\n"
+    existing = operator_paths()
+    prefix_lines = [f"prefix {x}" for x in operator_prefixes()]
+    OPERATOR.write_text(header + "\n".join(prefix_lines + sorted(existing | set(paths))) + "\n")
+    print(f"noise baseline: {len(paths)} paths written to {OPERATOR}")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print(__doc__); sys.exit(2)
+    cmd = sys.argv[1]
+    if cmd == "snapshot":
+        snapshot(sys.argv[2])
+    elif cmd == "compare":
+        sys.exit(compare(sys.argv[2], sys.argv[3]))
+    elif cmd == "noise":
+        noise(sys.argv[2], sys.argv[3])
+    else:
+        print(__doc__); sys.exit(2)

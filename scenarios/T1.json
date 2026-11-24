@@ -1,0 +1,50 @@
+{
+ "id": "T1",
+ "title": "Structure, across repos",
+ "world": "base",
+ "workspace": "greet-api",
+ "question": "In the web-app repository, what does the function run() (in src/main.ts) call? For each call, say where the called function is defined.",
+ "answer_key": "run() is in web-app/src/main.ts (line 4) and calls two functions on line 5:\n- render \u2014 defined in web-app/src/render.ts (line 1)\n- hello \u2014 imported from the npm package greet-lib, defined in the greet-lib repo, src/index.ts (line 1)\nScoring: both calls with their definitions = correct; one = partial; none or invented calls = wrong.",
+ "expected": {
+  "X-A0": "wrong",
+  "X-A1": "correct",
+  "X-G2": "correct",
+  "X-G3": "correct",
+  "X-G4": "wrong",
+  "X-A5": "correct"
+ },
+ "lesson": "Every code graph (syntax or compiler) maps code structure in another repo; the contract graph doesn't model code.",
+ "tool_checks": [
+  {
+   "layer": "l2",
+   "call": "graph_explain",
+   "args": [
+    "run"
+   ],
+   "contains": [
+    "render"
+   ]
+  },
+  {
+   "layer": "l3",
+   "call": "scip_symbols",
+   "args": [
+    "run"
+   ],
+   "contains": [
+    "web-app/src/main.ts"
+   ]
+  },
+  {
+   "layer": "l4",
+   "call": "contract_operation",
+   "args": [
+    "run"
+   ],
+   "contains": [
+    "no operation named run"
+   ]
+  }
+ ],
+ "plain": "From the API team's repo: what does the web app's run() function call, and where do those functions live?"
+}

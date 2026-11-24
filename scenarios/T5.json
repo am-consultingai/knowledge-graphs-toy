@@ -1,0 +1,63 @@
+{
+ "id": "T5",
+ "title": "Interface: an event",
+ "world": "base",
+ "workspace": "greet-api",
+ "question": "This repository emits the USER_GREETED webhook event. Which other repositories react to it, and what do they do? Give repo/file:line.",
+ "answer_key": "Only mail-app: mail-app/src/webhooks.ts line 10 registers sendWelcomeMail for USER_GREETED; sendWelcomeMail (mail-app/src/mail.ts line 1) logs a welcome message.\nTraps: web-app/src/analytics.ts registers a handler for PAGE_VIEWED and mail-app/src/digest.ts for DAILY_DIGEST \u2014 different events; they do not react to USER_GREETED.\nScoring: correct = mail-app webhooks.ts with sendWelcomeMail, stated as the only reaction. partial = mail-app named without the handler, or other registrations left as possible. wrong = a trap file named as reacting, or nothing found.",
+ "expected": {
+  "X-A0": "wrong",
+  "X-A1": "correct",
+  "X-G2": "wrong",
+  "X-G3": "wrong",
+  "X-G4": "correct",
+  "X-A5": "correct"
+ },
+ "lesson": "Events are contracts: only the contract graph links the emitter to the handler of THIS event; the code graphs only see three onEvent registrations.",
+ "tool_checks": [
+  {
+   "layer": "l4",
+   "call": "contract_event_subscribers",
+   "args": [
+    "USER_GREETED"
+   ],
+   "contains": [
+    "mail-app/src/webhooks.ts:10",
+    "sendWelcomeMail"
+   ]
+  },
+  {
+   "layer": "l2",
+   "call": "graph_explain",
+   "args": [
+    "USER_GREETED"
+   ],
+   "absent": [
+    "webhooks.ts"
+   ]
+  },
+  {
+   "layer": "l3",
+   "call": "scip_symbols",
+   "args": [
+    "USER_GREETED"
+   ],
+   "absent": [
+    "webhooks.ts"
+   ]
+  },
+  {
+   "layer": "l4",
+   "call": "contract_event_subscribers",
+   "args": [
+    "USER_GREETED"
+   ],
+   "absent": [
+    "analytics.ts",
+    "digest.ts"
+   ]
+  }
+ ],
+ "plain": "The API team emits a USER_GREETED event. Which other repos react to it, and how? (Three files register event handlers; only one handles USER_GREETED.)",
+ "read_limit": 1
+}

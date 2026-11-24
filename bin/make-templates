@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+"""Write the six configurations (profiles) into conditions/<name>/.
+
+Each is a Claude Code config folder copied fresh for every session. Placeholder filled per session:
+  {{WORKSPACE}}  the repo the session starts in
+"""
+import json
+import shutil
+from pathlib import Path
+
+P = Path(__file__).resolve().parent.parent
+ORG = json.loads((P / "org.json").read_text())
+COND = P / "conditions"
+DENY = ["Edit", "Write", "NotebookEdit", "Agent", "WebFetch", "WebSearch", "Bash(env*)", "Bash(printenv*)", "Bash(set)",
+        "CronCreate", "CronDelete", "CronList", "EnterWorktree", "ExitWorktree", "ListAgents", "SendMessage", "Monitor",
+        "RemoteTrigger", "ScheduleWakeup", "TaskStop", "Workflow", "ReportFindings"]
+repos = "; ".join(f"{r} ({c['description']})" for r, c in ORG["repos"].items())
+WS = ("You work in the current directory: the `{{WORKSPACE}}` repository of a small organisation. Its repositories are: "
+      + repos + ". Only `{{WORKSPACE}}` is on this machine: reads and commands are limited to the current directory, and "
+      "anything that touches other paths is refused. Read-only Bash commands here, such as grep and find, are allowed; files "
+      "can't be edited. Run commands from the current directory with relative paths: `cd`, shell loops and shell variables "
+      "are refused.")
+FORMAT = ("Answer format: short and structured, no long paragraphs. Start with a one-sentence direct answer. Then a "
+          "Markdown table or numbered list, one row per item found, each with its location (repo/path:line). End with a "
+          "section `How I found it`: at most 3 short bullets naming the tools you used.")
+LINES = {
+    "search": "Code search across all the organisation's repositories is available through the `org` MCP tool search_code.",
+    "read": "A committed file of any repository can be opened through the `org` MCP tool read_file, once another tool has pointed you to it. In some tasks only a limited number of files can be opened.",
+    "l2": "A syntax code graph (tree-sitter) of all repositories is available through the `org` MCP tools graph_explain, graph_callers and graph_path.",
+    "l3": "A compiler index (SCIP) of all repositories is available through the `org` MCP tools scip_symbols and scip_references.",
+    "l4": "An API contract graph of all repositories (backend GraphQL schema fields, client queries, webhook events) is available through the `org` MCP tools contract_field_consumers, contract_operation, contract_event_subscribers and contract_event_sources.",
+}
+SETUPS = {
+    "X-A0": ("own repo only", ""),
+    "X-A1": ("own repo + code search + open files (baseline)", "search,read"),
+    "X-G2": ("own repo + open files + syntax graph", "read,l2"),
+    "X-G3": ("own repo + open files + compiler index (SCIP)", "read,l3"),
+    "X-G4": ("own repo + open files + contract graph", "read,l4"),
+    "X-A5": ("own repo + code search + open files + all three graphs", "search,read,l2,l3,l4"),
+}
+for name, (desc, layers) in SETUPS.items():
+    d = COND / name
+    if d.exists():
+        shutil.rmtree(d)
+    d.mkdir(parents=True)
+    settings = {"permissions": {"blockReadsOutsideWorkingDirectories": True,
+                                "allow": ["mcp__org__*"] if layers else [], "deny": DENY},
+                "claudeMdExcludes": [f"{P}/worlds/**"], "autoMemoryEnabled": False}
+    (d / "settings.json").write_text(json.dumps(settings, indent=2) + "\n")
+    (d / "CLAUDE.md").write_text("\n\n".join([WS] + [LINES[l] for l in layers.split(",") if l] + [FORMAT]) + "\n")
+    (d / "profile.json").write_text(json.dumps({"description": desc, "mcp_layers": layers}, indent=2) + "\n")
+print("configurations:", ", ".join(SETUPS))

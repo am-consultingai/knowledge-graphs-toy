@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""Run one scenario in one configuration: a fresh headless Claude Code session (Haiku by default).
+
+  bin/run-question <scenario> <configuration> [--rep N] [--model claude-haiku-5-5] [--store-mode central|federated]
+
+Starts in the scenario's workspace repo inside its world; the org MCP server gets the configuration's
+layers. Saves results/raw/<run-id>.{jsonl,checks.json,store-calls.jsonl}. Prints the run id.
+"""
+import argparse
+import datetime
+import hashlib
+import json
+import os
+import pwd
+import re
+import shutil
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+P = Path(__file__).resolve().parent.parent
+# the Claude Code credential lives outside the project (see bin/sandbox); used here only to redact logs
+SECRETS = Path(os.environ.get("KG_SECRETS_FILE") or
+               Path(pwd.getpwuid(os.getuid()).pw_dir) / ".config/claude/temp_creds/knowledge-graphs-toy.env")
+ap = argparse.ArgumentParser()
+ap.add_argument("scenario"); ap.add_argument("config")
+ap.add_argument("--rep", default="1"); ap.add_argument("--model", default="claude-haiku-5-5")
+ap.add_argument("--store-mode", default="central"); ap.add_argument("--run-id", default="")
+a = ap.parse_args()
+sc = json.loads((P / "scenarios" / f"{a.scenario}.json").read_text())
+prof = json.loads((P / "conditions" / a.config / "profile.json").read_text())
+W = P / "worlds" / sc["world"]
+workdir = W / "repos" / sc["workspace"]
+rid = a.run_id or f"{a.scenario}-{a.config}-r{a.rep}-{datetime.datetime.now().strftime('%Y%m%dT%H%M%S%f')[:-3]}"
+rd = P / ".sandbox/runs" / rid
+for sub in ("home", "tmp", "xdg/cache", "xdg/config", "xdg/data", "xdg/state"):
+    (rd / sub).mkdir(parents=True, exist_ok=True)
+rt = P / ".sandbox/r" / hashlib.sha1(rid.encode()).hexdigest()[:8]; rt.mkdir(parents=True, exist_ok=True); rt.chmod(0o700)
+shutil.copytree(P / "conditions" / a.config, rd / "config"); (rd / "config/profile.json").unlink()
+md = rd / "config/CLAUDE.md"; md.write_text(md.read_text().replace("{{WORKSPACE}}", sc["workspace"]))
+(P / "results/raw").mkdir(parents=True, exist_ok=True)
+
+
+def snapshot():
+    out = subprocess.run(["find", str(W / "repos"), "-name", ".git", "-prune", "-o", "-name", "node_modules", "-prune", "-o",
+                          "-printf", r"%p\t%s\t%T@\n"], stdout=subprocess.PIPE, text=True).stdout
+    return sorted(out.splitlines())
+
+
+extra = []
+layers = prof["mcp_layers"]
+if layers:
+    (rd / "mcp.json").write_text(json.dumps({"mcpServers": {"org": {
+        "command": str(P / "tools/.venv-store/bin/python"), "args": [str(P / "graphs/server.py")],
+        "env": {"WORLD": str(W), "STORE_LAYERS": layers, "STORE_MODE": a.store_mode, "READ_LIMIT": str(sc.get("read_limit", 0)),
+                "STORE_LOG": str(rd / "store-calls.jsonl"), "TMPDIR": str(rd / "tmp")}}}}))
+    extra = ["--mcp-config", str(rd / "mcp.json")]
+before = snapshot()
+env_args = []
+for k, v in {"HOME": rd / "home", "TMPDIR": rd / "tmp", "CLAUDE_CODE_TMPDIR": rd / "tmp", "XDG_RUNTIME_DIR": rt,
+             "XDG_CACHE_HOME": rd / "xdg/cache", "XDG_CONFIG_HOME": rd / "xdg/config", "XDG_DATA_HOME": rd / "xdg/data",
+             "XDG_STATE_HOME": rd / "xdg/state", "CLAUDE_CONFIG_DIR": rd / "config",
+             "ENABLE_CLAUDEAI_MCP_SERVERS": "false", "CLAUDE_CODE_SYNC_SKILLS": "0"}.items():
+    env_args += ["-e", f"{k}={v}"]
+cmd = [str(P / "bin/sandbox"), "--secrets", *env_args, "--", str(P / "tools/bin/claude"), "-p", sc["question"],
+       "--model", a.model, "--effort", "high", "--max-turns", "30", "--output-format", "stream-json", "--verbose",
+       "--no-session-persistence", "--setting-sources", "user", "--strict-mcp-config", "--permission-mode", "dontAsk", *extra]
+t0 = time.time()
+proc = subprocess.run(cmd, cwd=workdir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+wall = int(time.time() - t0)
+secret = [l.split("=", 1)[1] for l in SECRETS.read_text().splitlines() if "=" in l]
+log = proc.stdout
+for s in secret:
+    log = log.replace(s, "[REDACTED]")
+(P / "results/raw" / f"{rid}.jsonl").write_text(log)
+if (rd / "store-calls.jsonl").exists():
+    shutil.copy(rd / "store-calls.jsonl", P / "results/raw" / f"{rid}.store-calls.jsonl")
+
+# ---- checks
+events = [json.loads(l) for l in log.splitlines() if l.startswith("{")]
+init = next((e for e in events if e.get("type") == "system" and e.get("subtype") == "init"), {})
+res = next((e for e in reversed(events) if e.get("type") == "result"), {})
+problems = []
+if before != snapshot():
+    problems.append("repos changed during the run")
+if str(init.get("apiKeySource", "none")).lower() != "none":
+    problems.append(f"not on the subscription: {init.get('apiKeySource')}")
+if a.model not in str(init.get("model")):
+    problems.append(f"model {init.get('model')}")
+TOOLS = {"search": ["search_code"], "read": ["read_file"], "l2": ["graph_explain", "graph_callers", "graph_path"],
+         "l3": ["scip_symbols", "scip_references"],
+         "l4": ["contract_field_consumers", "contract_operation", "contract_event_subscribers", "contract_event_sources"]}
+want = sorted("mcp__org__" + t for l in layers.split(",") if l for t in TOOLS[l])
+have = sorted(t for t in init.get("tools", []) if t.startswith("mcp__"))
+if have != want:
+    problems.append(f"tools {have} != {want}")
+calls = {}
+for e in events:
+    m = e.get("message")
+    if isinstance(m, dict) and isinstance(m.get("content"), list):
+        for c in m["content"]:
+            if isinstance(c, dict) and c.get("type") == "tool_use":
+                k = c["name"].replace("mcp__org__", "")
+                calls[k] = calls.get(k, 0) + 1
+u = res.get("usage", {})
+checks = {"run_id": rid, "scenario": a.scenario, "config": a.config, "world": sc["world"], "workspace": sc["workspace"],
+          "model": init.get("model"), "store_mode": a.store_mode, "valid": not problems, "problems": problems,
+          "tool_calls": calls, "turns": res.get("num_turns"), "wall_seconds": wall,
+          "tokens_in": u.get("input_tokens", 0) + u.get("cache_read_input_tokens", 0) + u.get("cache_creation_input_tokens", 0),
+          "tokens_out": u.get("output_tokens", 0), "answer": res.get("result") or ""}
+(P / "results/raw" / f"{rid}.checks.json").write_text(json.dumps(checks, indent=1))
+print(rid)

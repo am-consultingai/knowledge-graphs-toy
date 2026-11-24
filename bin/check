@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+"""Deterministic check of the graphs themselves (no model involved).
+
+  bin/check [scenario ...]
+
+For every scenario's tool_checks, calls the graph tool directly in the scenario's world, in both store
+modes (central and federated), and asserts that the expected text is present (contains) or absent.
+Prints PASS/FAIL per check and exits non-zero if any check fails.
+"""
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+P = Path(__file__).resolve().parent.parent
+PY = str(P / "tools/.venv-store/bin/python")
+if os.environ.get("HOME", "") != str(P / ".sandbox/home") or sys.executable != PY:
+    os.execv(str(P / "bin/sandbox"), [str(P / "bin/sandbox"), "--", PY, *sys.argv])
+
+CALL = """
+import json, sys
+sys.path.insert(0, {graphs!r})
+import server
+print(getattr(server, {call!r})(*json.loads({args!r})))
+"""
+names = sys.argv[1:] or sorted(p.stem for p in (P / "scenarios").glob("*.json"))
+failed = 0
+tmp = P / ".sandbox/check-tmp"; tmp.mkdir(parents=True, exist_ok=True)
+for sid in names:
+    sc = json.loads((P / "scenarios" / f"{sid}.json").read_text())
+    print(f"\n{sid}  {sc['title']}  (world: {sc['world']})")
+    for ck in sc["tool_checks"]:
+        for mode in ("central", "federated"):
+            env = dict(os.environ, WORLD=str(P / "worlds" / sc["world"]), STORE_LAYERS=ck["layer"], STORE_MODE=mode, TMPDIR=str(tmp))
+            out = subprocess.run([PY, "-c", CALL.format(graphs=str(P / "graphs"), call=ck["call"], args=json.dumps(ck["args"]))],
+                                 env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=300).stdout
+            miss = [c for c in ck.get("contains", []) if c not in out]
+            extra = [a for a in ck.get("absent", []) if a in out]
+            ok = not miss and not extra
+            failed += not ok
+            label = f"{ck['layer']:<6} {ck['call']}({', '.join(a if len(a) < 40 else a[:37] + '...' for a in ck['args'])})"
+            print(f"  {'PASS' if ok else 'FAIL'}  {mode:<9} {label}"
+                  + (f"   missing {miss}" if miss else "") + (f"   unexpected {extra}" if extra else ""))
+            if not ok:
+                print("        output: " + out.strip().replace("\n", " | ")[:300])
+print(f"\n{'ALL CHECKS PASSED' if not failed else f'{failed} CHECK(S) FAILED'}")
+sys.exit(1 if failed else 0)

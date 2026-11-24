@@ -1,0 +1,895 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code Knowledge Graphs</title>
+<meta name="description" content="Which code graph answers which question? Syntax graphs, compiler indexes and contract graphs for coding agents, shown on a toy organisation with a live experiment.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/am-consultingai/am-assets@v3/brand.css">
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/am-consultingai/am-assets@v3/logo/favicon/favicon.svg" type="image/svg+xml">
+<style>
+/* brand.css carries the tokens and fonts; this file adds the deck layout only. */
+:root{--syn:#818cf8;--cmp:#22d3ee;--con:#34d399;--trap:#fbbf24;--red:#f87171;--green:#34d399;--dim:#475569}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--deep)}
+.stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;background:var(--bg);overflow:hidden;
+  transform:translate(-50%,-50%) scale(var(--scale,1))}
+.progress{position:absolute;left:0;top:0;height:5px;background:var(--grad);transition:width .4s ease;z-index:5}
+
+/* ── slide frame ── */
+.slide{line-height:1.3;position:absolute;inset:0;display:flex;flex-direction:column;padding:48px 96px 0;
+  opacity:0;visibility:hidden;transition:opacity .45s ease,visibility 0s .45s}
+.slide.on{opacity:1;visibility:visible;transition:opacity .45s ease}
+.top{display:flex;align-items:center;gap:28px;height:56px;flex:none}
+.top img{height:48px;width:auto}
+.secs{display:flex;gap:10px;margin-left:auto;align-items:center}
+.secs i{width:14px;height:14px;border-radius:50%;background:#26324a}
+.secs i.done{background:rgba(34,211,238,.45)}
+.secs i.on{width:20px;height:20px;background:var(--cyan);box-shadow:0 0 0 6px rgba(34,211,238,.16)}
+.sect{font-family:var(--mono);font-size:24px;letter-spacing:.1em;text-transform:uppercase;color:var(--s3);
+  display:flex;align-items:center;gap:14px}
+.sect .n{color:var(--s4);margin-left:8px;padding-left:20px;border-left:1px solid var(--line)}
+.slide h2{font-size:62px;line-height:1.1;margin:34px 0 0;max-width:1720px;color:var(--ink)}
+.slide h2 em{font-style:normal}
+.body{flex:1;min-height:0;margin:30px 0 30px;position:relative;display:flex;flex-direction:column;justify-content:center;gap:28px}
+.q{flex:none;margin:0 -96px;padding:24px 96px 30px;border-top:1px solid var(--line);background:var(--deep);
+  display:flex;align-items:center;gap:26px}
+.q .qm{flex:none;width:56px;height:56px;border-radius:50%;border:2px solid var(--cyan);color:var(--cyan);
+  display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:30px}
+.q q{quotes:none;font-family:var(--display);font-size:38px;font-weight:500;color:var(--ink);line-height:1.25}
+
+/* ── type ── */
+.kw{font-family:var(--mono);font-size:24px;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan)}
+.say{font-family:var(--display);font-size:40px;font-weight:600;color:var(--ink);line-height:1.15}
+.say.sm{font-size:32px}
+.lbl{font-size:27px;color:var(--s2);line-height:1.35}
+.dimt{color:var(--s4)}
+.big{font-family:var(--display);font-weight:700;font-size:120px;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.slide code{font-size:.88em;padding:2px 10px;border-radius:7px;color:#67e8f9;background:#0a1626}
+.syn{color:var(--syn)!important} .cmp{color:var(--cmp)!important} .con{color:var(--con)!important}
+.trap{color:var(--trap)!important} .green{color:var(--green)!important} .red{color:var(--red)!important} .ink{color:var(--ink)!important}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:30px 34px}
+.row{display:flex;gap:32px;align-items:stretch} .row>*{flex:1;min-width:0}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:30px}
+.tagline{position:absolute;font-family:var(--display);font-weight:600;font-size:34px;color:var(--ink);
+  display:flex;align-items:center;gap:14px;white-space:nowrap}
+.tagline::before{content:"";width:34px;height:3px;border-radius:2px;background:var(--c,var(--cyan))}
+.chip{display:inline-flex;align-items:center;gap:12px;font-size:26px;color:var(--ink);padding:12px 20px;border-radius:14px;
+  background:var(--card);border:1px solid var(--line);white-space:nowrap}
+.chip.mono{font-family:var(--mono);font-size:24px}
+.ico{width:1em;height:1em;flex:none}
+.trapchips .chip{font-size:23px;padding:10px 16px}
+svg text{font-family:var(--sans);fill:var(--s2)}
+svg .mono{font-family:var(--mono)}
+
+/* ── motion ── */
+.slide [data-a]{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease;
+  transition-delay:calc(var(--i,0) * 140ms + 150ms)}
+.slide.on [data-a]{opacity:1;transform:none}
+.slide [data-a="left"]{transform:translateX(-40px)} .slide [data-a="right"]{transform:translateX(40px)}
+.slide [data-a="pop"]{transform:scale(.6)}
+.slide.on [data-a="left"],.slide.on [data-a="right"],.slide.on [data-a="pop"]{transform:none}
+.draw{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.3s ease;transition-delay:var(--d,.5s)}
+.slide.on .draw{stroke-dashoffset:0}
+.fade{opacity:0;transition:opacity .7s ease;transition-delay:var(--d,.5s)}
+.slide.on .fade{opacity:1}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,211,238,.0)}50%{box-shadow:0 0 0 14px rgba(34,211,238,.18)}}
+@keyframes glow{0%,100%{filter:drop-shadow(0 0 0 rgba(34,211,238,0))}50%{filter:drop-shadow(0 0 18px rgba(34,211,238,.55))}}
+@keyframes drift{0%,100%{transform:translate(0,0)}50%{transform:translate(0,-10px)}}
+@keyframes dash{to{stroke-dashoffset:-40}}
+.static .ag .bar,.static .slide,.static .slide [data-a],.static .draw,.static .fade,.static .progress{transition:none!important}
+.static *{animation:none!important}
+
+/* ── cover ── */
+.open{justify-content:center;padding-top:0}
+.open .logo{height:96px;width:auto;margin-bottom:40px;align-self:flex-start}
+.open h1{font-size:100px;line-height:1.02;letter-spacing:-.035em;max-width:1150px}
+.open .subt{font-family:var(--display);font-size:44px;font-weight:500;color:var(--s2);margin-top:26px;max-width:1000px;line-height:1.25}
+.open .meta{font-size:30px;color:var(--s3);margin-top:36px;padding-top:24px;border-top:1px solid var(--line);max-width:1000px}
+.open .body{flex:none;margin:0;justify-content:flex-start}
+.open .spacer{flex:1}
+.cover-net{position:absolute;right:-60px;top:170px;width:700px;height:700px;opacity:.9}
+
+/* ── agenda ── */
+.ag{display:grid;grid-template-columns:90px 1fr 520px;row-gap:26px;align-items:center}
+.ag .n{font-family:var(--display);font-size:56px;font-weight:700;color:var(--s4)}
+.ag .t{font-family:var(--display);font-size:46px;font-weight:600;color:var(--ink)}
+.ag .t small{display:block;font-family:var(--sans);font-size:27px;font-weight:400;color:var(--s3);margin-top:4px}
+.ag .bar{height:34px;border-radius:9px;background:var(--grad);transform-origin:left;transform:scaleX(0);
+  transition:transform .9s cubic-bezier(.2,.7,.2,1);transition-delay:calc(var(--i,0) * 140ms + 300ms)}
+.slide.on .ag .bar{transform:none}
+.ag .d{display:flex;align-items:center;gap:18px;font-family:var(--mono);font-size:26px;color:var(--s3)}
+.ag .hl .n{color:var(--cyan)}
+
+/* ── icons legend ── */
+.gtrio{display:flex;gap:26px;flex-wrap:wrap}
+.gtag{display:inline-flex;align-items:center;gap:14px;font-family:var(--display);font-weight:600;font-size:30px;
+  padding:12px 22px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
+.gtag svg{width:40px;height:40px}
+.gtag.syn{border-color:rgba(129,140,248,.55)} .gtag.cmp{border-color:rgba(34,211,238,.55)} .gtag.con{border-color:rgba(52,211,153,.55)}
+
+/* ── three type cards ── */
+.tcard{display:flex;flex-direction:column;gap:20px;padding:36px 38px;border-radius:24px;background:var(--card);border:1px solid var(--line)}
+.tcard .ic{width:120px;height:120px}
+.tcard h3{font-size:46px}
+.tcard .kv{display:grid;grid-template-columns:140px 1fr;gap:12px 18px;font-size:28px;align-items:baseline}
+.tcard .kv b{font-family:var(--mono);font-size:22px;letter-spacing:.1em;text-transform:uppercase;color:var(--s4);font-weight:500}
+.tcard .kv span{color:var(--ink)}
+.tcard.syn{border-color:rgba(129,140,248,.5);background:linear-gradient(180deg,rgba(129,140,248,.10),var(--card) 60%)}
+.tcard.cmp{border-color:rgba(34,211,238,.5);background:linear-gradient(180deg,rgba(34,211,238,.10),var(--card) 60%)}
+.tcard.con{border-color:rgba(52,211,153,.5);background:linear-gradient(180deg,rgba(52,211,153,.10),var(--card) 60%)}
+
+/* ── mock widgets (slide 6) ── */
+.mock{background:#060a13;border:1px solid var(--line);border-radius:18px;overflow:hidden;font-family:var(--mono);font-size:25px}
+.mock .bar{display:flex;gap:9px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line-soft);color:var(--s3);font-size:21px}
+.mock .bar i{width:13px;height:13px;border-radius:50%;background:#334155}
+.mock .bar span{margin-left:10px}
+.mock .in{padding:22px 26px;display:flex;flex-direction:column;gap:12px;color:var(--s2);position:relative;min-height:300px}
+.mock .hl{background:rgba(34,211,238,.12);border-radius:6px;padding:2px 8px;margin:-2px -8px}
+.menu{position:absolute;left:150px;top:72px;background:#111a2c;border:1px solid var(--line);border-radius:12px;padding:8px 0;
+  box-shadow:0 20px 40px -10px #000;min-width:390px}
+.menu div{padding:9px 20px;display:flex;justify-content:space-between;gap:30px;color:var(--ink);font-family:var(--sans);font-size:24px}
+.menu div.on{background:rgba(34,211,238,.16)}
+.menu small{color:var(--s4);font-family:var(--mono);font-size:20px}
+.cap{font-size:24px;color:var(--s3);margin-top:16px;line-height:1.35}
+
+/* ── matrix (slide 7) ── */
+.mx{display:grid;grid-template-columns:330px repeat(5,1fr);gap:12px;align-items:center}
+.mx .h{font-family:var(--mono);font-size:23px;letter-spacing:.06em;text-transform:uppercase;color:var(--s3);text-align:center;padding-bottom:6px}
+.mx .r{display:flex;align-items:center;gap:16px;font-family:var(--display);font-size:32px;font-weight:600}
+.mx .r svg{width:46px;height:46px}
+.mx .c{height:96px;border-radius:16px;display:grid;place-items:center;font-family:var(--display);font-size:52px;font-weight:700;
+  background:var(--card);border:1px solid var(--line)}
+.mx .c.y{color:var(--green);background:rgba(52,211,153,.10);border-color:rgba(52,211,153,.45)}
+.mx .c.n{color:var(--red);background:rgba(248,113,113,.07);border-color:rgba(248,113,113,.35)}
+.mx .c.t{color:var(--trap);background:rgba(251,191,36,.07);border-color:rgba(251,191,36,.4)}
+.mx .c svg{width:52px;height:52px}
+
+/* ── timeline (slide 3) ── */
+.tl{position:relative;height:420px}
+.tl .ev{position:absolute;width:230px;transform:translateX(-50%);text-align:center}
+.tl .ev .y{font-family:var(--display);font-weight:700;font-size:44px;color:var(--ink)}
+.tl .ev .w{font-family:var(--mono);font-size:23px;color:var(--cyan);margin-top:4px}
+.tl .ev .d{font-size:23px;color:var(--s3);margin-top:6px;line-height:1.3}
+
+/* ── flows ── */
+.flow{display:flex;align-items:center;gap:0}
+.fn{flex:1;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 22px;text-align:center;
+  display:flex;flex-direction:column;gap:10px;align-items:center;min-height:200px;justify-content:center}
+.fn h3{font-size:32px;color:var(--ink)}
+.fn .lbl{font-size:23px;color:var(--s3)}
+.fn.hi{border-color:rgba(34,211,238,.6);background:linear-gradient(180deg,rgba(34,211,238,.10),var(--card))}
+.fa{flex:0 0 64px;display:grid;place-items:center;color:var(--cyan);font-size:46px;font-family:var(--display)}
+.tools{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.tools .tg{border-radius:18px;padding:18px 22px;border:1px solid var(--line);background:var(--card);display:flex;flex-direction:column;gap:10px}
+.tools .tg .hd{display:flex;align-items:center;gap:12px;font-family:var(--display);font-weight:600;font-size:28px}
+.tools .tg .hd svg{width:34px;height:34px}
+.tools .tg code{font-size:22px;align-self:flex-start}
+.tools .tg.syn{border-color:rgba(129,140,248,.45)} .tools .tg.cmp{border-color:rgba(34,211,238,.45)} .tools .tg.con{border-color:rgba(52,211,153,.45)}
+
+/* ── graph diagrams ── */
+.gwrap{background:#080c16;border:1px solid var(--line);border-radius:22px;padding:14px}
+.gwrap{flex:none!important} .gwrap svg{display:block;height:600px;width:auto}
+svg .lane rect{fill:#0c1322;stroke:rgba(148,163,184,.18)}
+svg .lane text{fill:var(--s4);font-family:var(--mono);font-size:20px;letter-spacing:.08em;text-transform:uppercase}
+svg .node rect{fill:#111a2c;stroke:rgba(148,163,184,.45);stroke-width:1.5}
+svg .node.hit rect{stroke:var(--cyan);stroke-width:3;fill:rgba(34,211,238,.08)}
+svg .node.hitc rect{stroke:var(--con);stroke-width:3;fill:rgba(52,211,153,.08)}
+svg .node.trap rect{stroke:var(--trap);stroke-width:3;fill:rgba(251,191,36,.07)}
+svg .node.ext rect{stroke-dasharray:8 6}
+svg .node.dimn{opacity:.45}
+svg .node .nl{fill:var(--ink);font-family:var(--mono);font-weight:600;font-size:23px}
+svg .node .ns{fill:var(--s3);font-size:18px}
+svg .e{fill:none;stroke:rgba(148,163,184,.6);stroke-width:2}
+svg .e.calls{stroke:var(--syn);stroke-width:4}
+svg .e.imports{stroke:var(--s2);stroke-width:2.2}
+svg .e.ref{stroke:var(--cmp);stroke-width:3.5}
+svg .e.refc{stroke:var(--con);stroke-width:3.5}
+svg .e.miss{stroke:var(--red);stroke-width:3.5;stroke-dasharray:10 8;animation:dash 1.2s linear infinite}
+svg .el{font-size:19px;fill:var(--s3);paint-order:stroke;stroke:#080c16;stroke-width:6px}
+svg .el.miss{fill:var(--red);font-weight:700}
+svg .note{font-size:22px;fill:var(--s3)}
+svg .note.miss{fill:var(--red);font-weight:700}
+.side{display:flex;flex-direction:column;gap:22px;justify-content:center}
+.stat{display:flex;flex-direction:column;gap:6px}
+.stat .big{font-size:104px}
+.badge{display:block;font-size:28px;font-weight:500;padding:14px 22px;border-radius:14px}
+.badge.ok{background:rgba(52,211,153,.12);color:var(--green);border:1px solid rgba(52,211,153,.4)}
+.badge.no{background:rgba(248,113,113,.10);color:var(--red);border:1px solid rgba(248,113,113,.4)}
+.badge.tr{background:rgba(251,191,36,.10);color:var(--trap);border:1px solid rgba(251,191,36,.4)}
+
+/* ── 3x3 ── */
+.m3{display:grid;grid-template-columns:600px repeat(3,1fr);gap:16px;align-items:stretch}
+.m3 .ch{display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--display);font-weight:600;font-size:30px;padding-bottom:6px}
+.m3 .ch svg{width:60px;height:60px}
+.m3 .rq{display:flex;flex-direction:column;justify-content:center;gap:4px;padding:0 10px}
+.m3 .rq b{font-family:var(--mono);font-size:26px;color:var(--cyan);font-weight:600}
+.m3 .rq span{font-size:29px;color:var(--ink);line-height:1.25}
+.m3 .rq small{font-size:23px;color:var(--s4)}
+.m3 .x{border-radius:20px;display:grid;place-items:center;font-family:var(--display);font-size:72px;font-weight:700;height:150px;
+  background:var(--card);border:1px solid var(--line);color:#3b475c}
+.m3 .x.w{color:var(--green);border:3px solid var(--green);background:rgba(52,211,153,.1)}
+.slide.on .m3 .x.w{animation:glow 2.4s ease-in-out 1.6s infinite}
+
+/* ── wrap ── */
+.wr{display:grid;grid-template-columns:1fr 90px 1fr;gap:20px 10px;align-items:center}
+.wr .qq{font-family:var(--display);font-size:38px;font-weight:600;color:var(--ink)}
+.wr .qq small{display:block;font-family:var(--mono);font-size:22px;letter-spacing:.12em;text-transform:uppercase;color:var(--s4);font-weight:500;margin-bottom:4px}
+.wr .ar{color:var(--cyan);font-size:52px;text-align:center;font-family:var(--display)}
+.wr .gg{display:flex;align-items:center;gap:20px;font-family:var(--display);font-size:38px;font-weight:600}
+.wr .gg svg{width:64px;height:64px}
+.cta{display:inline-flex;align-items:center;gap:18px;font-family:var(--display);font-size:40px;font-weight:700;color:#06121a;
+  background:var(--grad);border-radius:18px;padding:20px 36px}
+.slide.on .cta{animation:pulse 2.2s ease-in-out 1.5s infinite}
+</style>
+</head>
+<body>
+<!-- icon set: one symbol per graph, used everywhere -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-syn" viewBox="0 0 64 64"><g fill="none" stroke="#818cf8" stroke-width="4" stroke-linecap="round">
+      <path d="M32 14 L16 32 M32 14 L48 32 M16 32 L9 50 M16 32 L23 50 M48 32 L41 50 M48 32 L55 50"/></g>
+      <g fill="#818cf8"><circle cx="32" cy="12" r="6"/><circle cx="16" cy="32" r="5"/><circle cx="48" cy="32" r="5"/>
+      <rect x="5" y="48" width="8" height="8" rx="2"/><rect x="19" y="48" width="8" height="8" rx="2"/><rect x="37" y="48" width="8" height="8" rx="2"/><rect x="51" y="48" width="8" height="8" rx="2"/></g></symbol>
+    <symbol id="i-cmp" viewBox="0 0 64 64"><g fill="none" stroke="#22d3ee" stroke-width="4" stroke-linecap="round">
+      <circle cx="32" cy="32" r="22"/><circle cx="32" cy="32" r="11"/><path d="M32 2 V16 M32 48 V62 M2 32 H16 M48 32 H62"/></g>
+      <circle cx="32" cy="32" r="4.5" fill="#22d3ee"/></symbol>
+    <symbol id="i-con" viewBox="0 0 64 64"><g fill="none" stroke="#34d399" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 22 H24 V42 H8"/><path d="M56 22 H40 V42 H56"/><path d="M24 27 H32 M24 37 H32"/></g>
+      <g fill="#34d399"><rect x="32" y="24" width="8" height="6" rx="1.5"/><rect x="32" y="34" width="8" height="6" rx="1.5"/></g></symbol>
+    <symbol id="i-trap" viewBox="0 0 64 64"><path d="M32 6 L60 56 H4 Z" fill="rgba(251,191,36,.15)" stroke="#fbbf24" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M32 24 V40" stroke="#fbbf24" stroke-width="5" stroke-linecap="round"/><circle cx="32" cy="48" r="3.5" fill="#fbbf24"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 64 64"><circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" stroke-width="4"/>
+      <path d="M32 18 V32 L42 38" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 64 64"><rect x="12" y="28" width="40" height="28" rx="6" fill="none" stroke="currentColor" stroke-width="4"/>
+      <path d="M20 28 V20 A12 12 0 0 1 44 20 V28" fill="none" stroke="currentColor" stroke-width="4"/></symbol>
+    <symbol id="i-agent" viewBox="0 0 64 64"><rect x="10" y="18" width="44" height="34" rx="12" fill="rgba(34,211,238,.12)" stroke="#22d3ee" stroke-width="4"/>
+      <circle cx="24" cy="35" r="4.5" fill="#22d3ee"/><circle cx="40" cy="35" r="4.5" fill="#22d3ee"/><path d="M32 18 V8" stroke="#22d3ee" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="7" r="4" fill="#22d3ee"/></symbol>
+    <symbol id="i-file" viewBox="0 0 48 60"><path d="M4 4 H30 L44 18 V56 H4 Z" fill="#111a2c" stroke="#9aa6b8" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M12 28 H36 M12 36 H36 M12 44 H28" stroke="#5b6b82" stroke-width="3" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
+
+<div class="stage" id="stage">
+<div class="progress" id="progress"></div>
+
+<!-- ═══════════ 0 · COVER ═══════════ -->
+<section class="slide open">
+  <svg class="cover-net" viewBox="0 0 820 820" aria-hidden="true">
+    <g id="coverNet"></g>
+  </svg>
+  <div class="spacer"></div>
+  <div class="body">
+    <img class="logo" data-a src="https://cdn.jsdelivr.net/gh/am-consultingai/am-assets@v3/logo/am-logo-white-600.png" alt="AM Consulting">
+    <h1 data-a style="--i:1">Which code graph answers <span class="grad">which question?</span></h1>
+    <div class="subt" data-a style="--i:2">Knowledge graphs for coding agents: a toy organisation and a live experiment</div>
+    <div class="gtrio" data-a style="--i:3;margin-top:36px">
+      <span class="gtag syn"><svg><use href="#i-syn"/></svg>Syntax graph</span>
+      <span class="gtag cmp"><svg><use href="#i-cmp"/></svg>Compiler index</span>
+      <span class="gtag con"><svg><use href="#i-con"/></svg>Contract graph</span>
+    </div>
+    <div class="meta" data-a style="--i:4">Avishay Meron · AM Consulting</div>
+  </div>
+  <div class="spacer"></div>
+  <footer class="q"><span class="qm">?</span><q>What will we cover?</q></footer>
+</section>
+
+<!-- ═══════════ A · AGENDA ═══════════ -->
+<section class="slide" data-sect="Agenda">
+  <h2>From “why graphs” to a live experiment, in five steps</h2>
+  <div class="body">
+    <div class="ag">
+      <div class="n" data-a style="--i:1">1</div><div class="t" data-a style="--i:1">Why knowledge graphs<small>What an agent can't see</small></div><div class="d" data-a style="--i:1"><div class="bar" style="--i:1;width:150px"></div>9 min</div>
+      <div class="n" data-a style="--i:2">2</div><div class="t" data-a style="--i:2">Three kinds of code graph<small>Structure · identity · interface</small></div><div class="d" data-a style="--i:2"><div class="bar" style="--i:2;width:200px"></div>12 min</div>
+      <div class="n" data-a style="--i:3">3</div><div class="t" data-a style="--i:3">The toy organisation<small>4 repos, ~60 lines, 5 traps</small></div><div class="d" data-a style="--i:3"><div class="bar" style="--i:3;width:100px"></div>6 min</div>
+      <div class="n" data-a style="--i:4">4</div><div class="t" data-a style="--i:4">Three graphs on this code<small>What each one actually holds</small></div><div class="d" data-a style="--i:4"><div class="bar" style="--i:4;width:270px"></div>16 min</div>
+      <div class="hl n" data-a style="--i:5">5</div><div class="t" data-a style="--i:5"><span class="grad">The experiment</span><small>Three questions, three graphs, one winner each</small></div><div class="d" data-a style="--i:5"><div class="bar" style="--i:5;width:170px"></div>10 min</div>
+    </div>
+  </div>
+  <footer class="q"><span class="qm">?</span><q>Why do we need knowledge graphs at all?</q></footer>
+</section>
+
+<!-- ═══════════ 1 · WHY: THE AGENT IS BLIND ACROSS REPOS ═══════════ -->
+<section class="slide" data-sect="Why graphs">
+  <h2>An agent only knows the code it can see, and across repos it sees almost nothing</h2>
+  <div class="body">
+    <svg viewBox="0 0 1728 560" style="width:100%;height:auto" aria-label="One lit repo among many dark ones">
+      <defs>
+        <radialGradient id="spot" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="rgba(34,211,238,.30)"/><stop offset="1" stop-color="rgba(34,211,238,0)"/></radialGradient>
+        <filter id="blur"><feGaussianBlur stdDeviation="3"/></filter>
+      </defs>
+      <g id="fogRepos" filter="url(#blur)"></g>
+      <circle cx="250" cy="300" r="250" fill="url(#spot)" class="fade" style="--d:.2s"/>
+      <g class="fade" style="--d:.3s">
+        <rect x="120" y="200" width="260" height="200" rx="20" fill="#111a2c" stroke="#22d3ee" stroke-width="4"/>
+        <text x="250" y="250" text-anchor="middle" style="font-family:var(--display);font-size:32px;font-weight:600;fill:#f3f4f6">your repo</text>
+        <use href="#i-agent" x="205" y="270" width="90" height="90"/>
+      </g>
+      <g class="fade" style="--d:1.1s">
+        <g style="animation:drift 5s ease-in-out infinite"><rect x="620" y="70" width="470" height="70" rx="35" fill="#0d1321" stroke="rgba(251,191,36,.6)" stroke-width="2"/>
+          <text x="855" y="116" text-anchor="middle" style="font-size:30px;fill:#f3f4f6">Who calls my function?</text></g>
+      </g>
+      <g class="fade" style="--d:1.5s">
+        <g style="animation:drift 6s ease-in-out .8s infinite"><rect x="1060" y="235" width="600" height="70" rx="35" fill="#0d1321" stroke="rgba(251,191,36,.6)" stroke-width="2"/>
+          <text x="1360" y="281" text-anchor="middle" style="font-size:30px;fill:#f3f4f6">What breaks if I remove this field?</text></g>
+      </g>
+      <g class="fade" style="--d:1.9s">
+        <g style="animation:drift 5.5s ease-in-out .4s infinite"><rect x="650" y="420" width="470" height="70" rx="35" fill="#0d1321" stroke="rgba(251,191,36,.6)" stroke-width="2"/>
+          <text x="885" y="466" text-anchor="middle" style="font-size:30px;fill:#f3f4f6">Who reacts to my event?</text></g>
+      </g>
+    </svg>
+    <div class="row" style="gap:24px;flex:none">
+      <div class="chip" data-a style="--i:6;flex:none"><span class="cmp">●</span> In view: <b>1 repo</b></div>
+      <div class="chip" data-a style="--i:7;flex:none"><span class="trap">●</span> The answers live <b>out there</b></div>
+      <div class="chip" data-a style="--i:8;flex:none;margin-left:auto"><span class="red">✗</span> Search: too many hits</div>
+      <div class="chip" data-a style="--i:9;flex:none"><span class="red">✗</span> Read it all: doesn't fit</div>
+    </div>
+  </div>
+  <footer class="q"><span class="qm">?</span><q>So what must be prepared for the agent in advance?</q></footer>
+</section>
+
+<!-- ═══════════ 2 · WHY: ASK INSTEAD OF READ ═══════════ -->
+<section class="slide" data-sect="Why graphs">
+  <h2>A knowledge graph computes the relationships ahead of time, so the agent can <span class="grad">ask instead of read</span></h2>
+  <div class="body">
+    <div class="row" style="gap:40px">
+      <div class="card" data-a="left" style="--i:1;display:flex;flex-direction:column;gap:18px">
+        <div class="kw" style="color:var(--red)">Without a graph · read</div>
+        <svg viewBox="0 0 760 330" style="width:100%;height:auto">
+          <g id="readFiles"></g>
+          <use href="#i-agent" x="640" y="120" width="100" height="100"/>
+        </svg>
+        <div class="say sm">Open, read, guess, repeat</div>
+      </div>
+      <div class="card" data-a="right" style="--i:2;display:flex;flex-direction:column;gap:18px;border-color:rgba(34,211,238,.55);background:linear-gradient(180deg,rgba(34,211,238,.08),var(--card))">
+        <div class="kw">With a graph · ask</div>
+        <svg viewBox="0 0 760 330" style="width:100%;height:auto">
+          <g id="miniGraph"></g>
+          <g class="fade" style="--d:1.4s">
+            <rect x="330" y="40" width="300" height="56" rx="12" fill="#0a1626" stroke="#22d3ee" stroke-width="2"/>
+            <text x="480" y="77" text-anchor="middle" class="mono" style="font-size:24px;fill:#67e8f9">who_uses(hello)</text>
+            <path d="M480 100 V140" stroke="#22d3ee" stroke-width="3" class="draw" pathLength="1" style="--d:1.8s"/>
+            <rect x="300" y="150" width="360" height="56" rx="12" fill="rgba(52,211,153,.12)" stroke="#34d399" stroke-width="2"/>
+            <text x="480" y="187" text-anchor="middle" class="mono" style="font-size:24px;fill:#f3f4f6">web-app/src/main.ts:5</text>
+          </g>
+          <use href="#i-agent" x="640" y="230" width="100" height="100"/>
+        </svg>
+        <div class="say sm">One call, one answer</div>
+      </div>
+    </div>
+    <div class="row" style="flex:none;gap:20px">
+      <div class="chip" data-a style="--i:3;flex:none"><b>Nodes</b>&nbsp;files · functions · symbols · API fields</div>
+      <div class="chip" data-a style="--i:4;flex:none"><b>Edges</b>&nbsp;calls · imports · references · uses</div>
+      <div class="chip" data-a style="--i:5;flex:none;margin-left:auto">Built once per repo · linked across the org</div>
+    </div>
+  </div>
+  <footer class="q"><span class="qm">?</span><q>Is this a new idea that came with AI?</q></footer>
+</section>
+
+<!-- ═══════════ 3 · WHY: GRAPHS PREDATE AI ═══════════ -->
+<section class="slide" data-sect="Why graphs">
+  <h2>No: knowledge graphs long predate AI. Agents are just a new kind of user</h2>
+  <div class="body">
+    <div class="tl">
+      <svg viewBox="0 0 1728 420" style="position:absolute;inset:0;width:100%;height:100%">
+        <path d="M40 200 H1690" stroke="url(#tlg)" stroke-width="6" stroke-linecap="round" class="draw" pathLength="1" style="--d:.2s"/>
+        <defs><linearGradient id="tlg" gradientUnits="userSpaceOnUse" x1="40" y1="0" x2="1690" y2="0"><stop offset="0" stop-color="#475569"/><stop offset=".85" stop-color="#38bdf8"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs>
+        <g id="tlDots"></g>
+      </svg>
+      <div class="ev" data-a style="--i:2;left:6%;top:0"><div class="y">1979</div><div class="w syn">ctags</div><div class="d">jump to a definition</div></div>
+      <div class="ev" data-a style="--i:3;left:22%;top:250px"><div class="y">2012</div><div class="w" style="color:var(--sky)">Knowledge Graph</div><div class="d">Google: “things, not strings”</div></div>
+      <div class="ev" data-a style="--i:4;left:36%;top:0"><div class="y">2015</div><div class="w con">GraphQL</div><div class="d">a typed API schema</div></div>
+      <div class="ev" data-a style="--i:5;left:50%;top:250px"><div class="y">2016</div><div class="w cmp">Language servers</div><div class="d">Go to definition, everywhere</div></div>
+      <div class="ev" data-a style="--i:6;left:64%;top:0"><div class="y">2018</div><div class="w syn">tree-sitter</div><div class="d">fast parsers for every language</div></div>
+      <div class="ev" data-a style="--i:7;left:78%;top:250px"><div class="y">2022</div><div class="w cmp">SCIP</div><div class="d">a precise code index</div></div>
+      <div class="ev" data-a style="--i:8;left:91%;top:0"><div class="y grad">2024</div><div class="w">MCP</div><div class="d">tools for agents</div></div>
+    </div>
+    <div class="row" style="flex:none;align-items:center;justify-content:center;gap:30px">
+      <div class="say" data-a style="--i:9;flex:none;color:var(--s3)">Before: <span class="ink">a person clicks</span></div>
+      <div class="say" data-a style="--i:10;flex:none;color:var(--cyan)">→</div>
+      <div class="say" data-a style="--i:11;flex:none">Now: <span class="grad">an agent asks</span></div>
+    </div>
+  </div>
+  <footer class="q"><span class="qm">?</span><q>Are all code graphs the same?</q></footer>
+</section>
+
+<!-- ═══════════ 4 · TYPES: THREE SOURCES OF TRUTH ═══════════ -->
+<section class="slide" data-sect="Graph types">
+  <h2>No: there are three kinds, each built from a different source of truth</h2>
+  <div class="body">
+    <div class="grid3">
+      <div class="tcard syn" data-a style="--i:1"><svg class="ic"><use href="#i-syn"/></svg><h3 class="syn">Syntax graph</h3>
+        <div class="kv"><b>Built by</b><span>a parser (tree-sitter)</span><b>Reads</b><span>the text of each file</span><b>Needs</b><span>nothing else</span></div></div>
+      <div class="tcard cmp" data-a style="--i:2"><svg class="ic"><use href="#i-cmp"/></svg><h3 class="cmp">Compiler index</h3>
+        <div class="kv"><b>Built by</b><span>the compiler (SCIP)</span><b>Reads</b><span>the whole program, typed</span><b>Needs</b><span>code that builds</span></div></div>
+      <div class="tcard con" data-a style="--i:3"><svg class="ic"><use href="#i-con"/></svg><h3 class="con">Contract graph</h3>
+        <div class="kv"><b>Built by</b><span>an API extractor</span><b>Reads</b><span>schemas, queries, events</span><b>Needs</b><span>declared APIs</span></div></div>
+    </div>
+    <div class="say sm" data-a style="--i:4;text-align:center;color:var(--s3)">Different source → <span class="ink">different truth</span></div>
+  </div>
+  <footer class="q"><span class="qm">?</span><q>What does each one actually know?</q></footer>
+</section>
+
+<!-- ═══════════ 5 · TYPES: THREE LAYERS ═══════════ -->
+<section class="slide" data-sect="Graph types">
+  <h2>Each graph knows one layer: <span class="syn">structure</span>, <span class="cmp">identity</span> or <span class="con">interface</span></h2>
+  <div class="body">
+    <svg viewBox="0 0 1728 600" style="width:100%;height:auto" aria-label="Three stacked layers">
+      <g id="layers"></g>
+    </svg>
+  </div>
+  <footer class="q"><span class="qm">?</span><q>Haven't we met these before?</q></footer>
+</section>
+
+<!-- ═══════════ 6 · TYPES: YOU ALREADY USE THEM ═══════════ -->
+<section class="slide" data-sect="Graph types">
+  <h2>Yes: you use all three every day, without calling them graphs</h2>
+  <div class="body">
+    <div class="grid3">
+      <div data-a style="--i:1">
+        <div class="gtag syn" style="margin-bottom:16px"><svg><use href="#i-syn"/></svg>Syntax</div>
+        <div class="mock"><div class="bar"><i></i><i></i><i></i><span>Outline</span></div>
+          <div class="in"><div>▾ main.ts</div><div style="padding-left:34px"><span class="hl">ƒ run()</span></div><div>▾ render.ts</div>
+            <div style="padding-left:34px">ƒ render()</div><div>▸ local.ts</div></div></div>
+        <div class="cap">Editor outline · ctags · symbol search on code hosts</div>
+      </div>
+      <div data-a style="--i:2">
+        <div class="gtag cmp" style="margin-bottom:16px"><svg><use href="#i-cmp"/></svg>Compiler</div>
+        <div class="mock"><div class="bar"><i></i><i></i><i></i><span>main.ts</span></div>
+          <div class="in"><div><span style="color:#c084fc">import</span> { hello } <span style="color:#c084fc">from</span> <span style="color:#86efac">"greet-lib"</span></div>
+            <div>render(<span class="hl">hello</span>("World"))</div>
+            <div class="menu"><div class="on">Go to definition <small>F12</small></div><div>Find all references <small>⇧F12</small></div><div style="color:var(--s3)">→ greet-lib/src/index.ts:1</div></div></div></div>
+        <div class="cap">Go to definition · Find references · precise code search</div>
+      </div>
+      <div data-a style="--i:3">
+        <div class="gtag con" style="margin-bottom:16px"><svg><use href="#i-con"/></svg>Contract</div>
+        <div class="mock"><div class="bar"><i></i><i></i><i></i><span>Schema registry</span></div>
+          <div class="in"><div style="color:var(--ink)">Query.<b>greeting</b></div><div>used by <span class="hl">1 client operation</span></div>
+            <div style="color:var(--s3)">web-app · query Greet</div><div style="color:var(--trap);margin-top:8px">⚠ removing it breaks a client</div></div></div>
+        <div class="cap">Schema-registry field usage · Pact · AsyncAPI</div>
+      </div>
+    </div>
+  </div>
+  <footer class="q"><span class="qm">?</span><q>Where does each one go blind?</q></footer>
+</section>
+
+<!-- ═══════════ 7 · TYPES: BLIND SPOTS ═══════════ -->
+<section class="slide" data-sect="Graph types">
+  <h2>Each graph's blind spot is another graph's strength</h2>
+  <div class="body">
+    <div class="mx">
+      <div></div><div class="h" data-a style="--i:1">Structure</div><div class="h" data-a style="--i:1">Identity</div><div class="h" data-a style="--i:1">Interface</div><div class="h" data-a style="--i:1">No build</div><div class="h" data-a style="--i:1">After a change</div>
+      <div class="r syn" data-a style="--i:2"><svg><use href="#i-syn"/></svg>Syntax graph</div>
+      <div class="c y" data-a="pop" style="--i:3">✓</div><div class="c n" data-a="pop" style="--i:4">✗</div><div class="c n" data-a="pop" style="--i:5">✗</div><div class="c y" data-a="pop" style="--i:6">✓</div><div class="c t" data-a="pop" style="--i:12"><svg style="color:var(--trap)"><use href="#i-clock"/></svg></div>
+      <div class="r cmp" data-a style="--i:3"><svg><use href="#i-cmp"/></svg>Compiler index</div>
+      <div class="c y" data-a="pop" style="--i:4">✓</div><div class="c y" data-a="pop" style="--i:5">✓</div><div class="c n" data-a="pop" style="--i:6">✗</div><div class="c n" data-a="pop" style="--i:7">✗</div><div class="c t" data-a="pop" style="--i:12"><svg style="color:var(--trap)"><use href="#i-clock"/></svg></div>
+      <div class="r con" data-a style="--i:4"><svg><use href="#i-con"/></svg>Contract graph</div>
+      <div class="c n" data-a="pop" style="--i:5">✗</div><div class="c n" data-a="pop" style="--i:6">✗</div><div class="c y" data-a="pop" style="--i:7">✓</div><div class="c y" data-a="pop" style="--i:8">✓</div><div class="c t" data-a="pop" style="--i:12"><svg style="color:var(--trap)"><use href="#i-clock"/></svg></div>
+    </div>
+    <div class="row" style="flex:none;gap:26px;margin-top:10px">
+      <div class="say sm" data-a style="--i:10">Structure, identity, interface: each ✗ is <span class="green">another graph's ✓</span></div>
+      <div class="say sm" data-a style="--i:13;text-align:right"><span class="trap">All three are snapshots:</span> they go stale</div>
+    </div>
+  </div>
+  <footer class="q"><span class="qm">?</span><q>How can we see these strengths and blind spots concretely?</q></footer>
+</section>
+
+<!-- ═══════════ 8 · CODE: THE TOY ORG ═══════════ -->
+<section class="slide" data-sect="The code">
+  <h2>A toy organisation small enough to hold in your head</h2>
+  <div class="body">
+    <svg id="orgMap" viewBox="0 0 1728 520" style="width:100%;height:auto"></svg>
+    <div class="row" style="flex:none;justify-content:center;gap:70px">
+      <div class="stat" data-a style="--i:6;flex:none;align-items:center"><div class="big cmp" data-count="4">4</div><div class="lbl">repos</div></div>
+      <div class="stat" data-a style="--i:7;flex:none;align-items:center"><div class="big cmp" data-count="2">2</div><div class="lbl">languages</div></div>
+      <div class="stat" data-a style="--i:8;flex:none;align-items:center"><div class="big cmp" data-count="60" data-fmt="~#">~60</div><div class="lbl">lines of code</div></div>
+      <div class="stat" data-a style="--i:9;flex:none;align-items:center"><div class="big con" data-count="3">3</div><div class="lbl">kinds of link</div></div>
+    </div>
+  </div>
+  <footer class="q"><span class="qm">?</span><q>Why is such a tiny codebase a fair test?</q></footer>
+</section>
+
+<!-- ═══════════ 9 · CODE: TRAPS ═══════════ -->
+<section class="slide" data-sect="The code">
+  <h2>Because it contains the <span class="trap">traps</span> real codebases have</h2>
+  <div class="body">
+    <svg id="orgTraps" viewBox="0 0 1728 520" style="width:100%;height:auto"></svg>
+    <div class="row trapchips" style="flex:none;gap:12px;flex-wrap:nowrap">
+      <div class="chip" data-a style="--i:3;flex:none"><b class="trap">1</b> Two functions named <code>hello</code></div>
+      <div class="chip" data-a style="--i:4;flex:none"><b class="trap">2</b> 3 look-alike importers</div>
+      <div class="chip" data-a style="--i:5;flex:none"><b class="trap">3</b> Code that can't build</div>
+      <div class="chip" data-a style="--i:6;flex:none"><b class="trap">4</b> Python ↔ TypeScript</div>
+      <div class="chip" data-a style="--i:7;flex:none"><b class="trap">5</b> A change after publishing</div>
+    </div>
+  </div>
+  <footer class="q"><span class="qm">?</span><q>How do graphs built on this code reach the agent?</q></footer>
+</section>
+
+<!-- ═══════════ 10 · GRAPHS: EXPOSED OVER MCP ═══════════ -->
+<section class="slide" data-sect="Three graphs">
+  <h2>Through tools: each graph is published per repo, linked centrally and served over MCP</h2>
+  <div class="body" style="gap:30px">
+    <div class="flow">
+      <div class="fn" data-a style="--i:1"><div class="kw" style="color:var(--s3)">4 repos</div><h3>Extract</h3><div class="lbl">each repo, on its own</div>
+        <div style="display:flex;gap:8px"><svg width="34" height="34"><use href="#i-syn"/></svg><svg width="34" height="34"><use href="#i-cmp"/></svg><svg width="34" height="34"><use href="#i-con"/></svg></div></div>
+      <div class="fa" data-a style="--i:2">→</div>
+      <div class="fn" data-a style="--i:3"><div class="kw" style="color:var(--s3)">registry</div><h3>Publish</h3><div class="lbl">a versioned snapshot</div></div>
+      <div class="fa" data-a style="--i:4">→</div>
+      <div class="fn" data-a style="--i:5"><div class="kw" style="color:var(--s3)">central</div><h3>Link</h3><div class="lbl">across repos (or ask each repo: federated)</div></div>
+      <div class="fa" data-a style="--i:6">→</div>
+      <div class="fn hi" data-a style="--i:7"><div class="kw">MCP server</div><h3><code style="font-size:30px">org</code></h3><div class="lbl">tools per graph</div></div>
+      <div class="fa" data-a style="--i:8">→</div>
+      <div class="fn" data-a style="--i:9"><svg width="80" height="80"><use href="#i-agent"/></svg><h3>Agent</h3><div class="lbl">picks the tool itself</div></div>
+    </div>
+    <div class="tools">
+      <div class="tg syn" data-a style="--i:10"><div class="hd syn"><svg><use href="#i-syn"/></svg>Syntax</div><code>graph_explain</code><code>graph_callers</code><code>graph_path</code></div>
+      <div class="tg cmp" data-a style="--i:11"><div class="hd cmp"><svg><use href="#i-cmp"/></svg>Compiler</div><code>scip_symbols</code><code>scip_references</code></div>
+      <div class="tg con" data-a style="--i:12"><div class="hd con"><svg><use href="#i-con"/></svg>Contract</div><code>contract_field_consumers</code><code>contract_event_subscribers</code></div>
+    </div>
+    <div class="row" style="flex:none;gap:20px">
+      <div class="chip" data-a style="--i:13;flex:none"><svg class="ico" style="color:var(--trap)"><use href="#i-lock"/></svg><code>read_file</code> opens only files a tool pointed to</div>
+      <div class="chip mono" data-a style="--i:14;flex:none;margin-left:auto">answers come back as <span class="cmp">repo/file:line</span></div>
+    </div>
+  </div>
+  <footer class="q"><span class="qm">?</span><q>What does each graph contain for this code?</q></footer>
+</section>
+
+<!-- ═══════════ 11 · GRAPHS: SYNTAX ═══════════ -->
+<section class="slide" data-sect="Three graphs">
+  <h2><span class="syn">Syntax graph:</span> <code>run() → render()</code> is there, but the <code>hello</code> call stops at the package name</h2>
+  <div class="body">
+    <div class="row" style="gap:40px">
+      <div class="gwrap" data-a style="--i:1;flex:2.4"><svg id="gSyn"></svg></div>
+      <div class="side" style="flex:1">
+        <div class="stat" data-a style="--i:2"><div class="big syn" data-count="81">81</div><div class="lbl">nodes</div></div>
+        <div class="stat" data-a style="--i:3"><div class="big syn" data-count="79">79</div><div class="lbl">edges: contains · imports · calls</div></div>
+        <div class="badge ok" data-a style="--i:4">✓ No build needed</div>
+        <div class="badge no" data-a style="--i:5">✗ Dead end at “greet-lib”</div>
+      </div>
+    </div>
+  </div>
+  <footer class="q"><span class="qm">?</span><q>Who can tell which <code>hello</code> a call means?</q></footer>
+</section>
+
+<!-- ═══════════ 12 · GRAPHS: SCIP ═══════════ -->
+<section class="slide" data-sect="Three graphs">
+  <h2><span class="cmp">Compiler index (SCIP):</span> every name resolves to one exact symbol, if the code builds</h2>
+  <div class="body">
+    <div class="row" style="gap:40px">
+      <div class="gwrap" data-a style="--i:1;flex:2.4"><svg id="gScip"></svg></div>
+      <div class="side" style="flex:1">
+        <div class="badge ok" data-a style="--i:2">✓ greet-lib's <code>hello</code>: exactly 2 uses</div>
+        <div class="badge tr" data-a style="--i:3">The other <code>hello</code>: 0 references</div>
+        <div class="card" data-a style="--i:4;padding:24px 28px;border-color:rgba(248,113,113,.45)">
+          <div class="kw" style="color:var(--red)">nobuild world</div>
+          <div class="lbl" style="margin-top:6px">web-app index entries</div>
+          <div style="display:flex;align-items:baseline;gap:22px;margin-top:6px"><span class="big" style="font-size:72px;color:var(--s3)">49</span><span class="say" style="color:var(--s4)">→</span><span class="big red" style="font-size:96px" data-count="0" data-from="49">0</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer class="q"><span class="qm">?</span><q>Who links a Python API field to the TypeScript query that uses it?</q></footer>
+</section>
+
+<!-- ═══════════ 13 · GRAPHS: CONTRACT ═══════════ -->
+<section class="slide" data-sect="Three graphs">
+  <h2><span class="con">Contract graph:</span> fields and events linked by name across languages, and nothing else</h2>
+  <div class="body">
+    <div class="row" style="gap:40px">
+      <div class="gwrap" data-a style="--i:1;flex:2.4"><svg id="gCon"></svg></div>
+      <div class="side" style="flex:1">
+        <div class="badge ok" data-a style="--i:2">✓ Crosses Python ↔ TypeScript</div>
+        <div class="lbl" data-a style="--i:3"><b class="ink">5 node types</b><br>schema field · operation · field use · event source · subscriber</div>
+        <div class="badge no" data-a style="--i:4">✗ No functions, no calls</div>
+        <div class="chip mono" data-a style="--i:5;align-self:flex-start;text-decoration:line-through;color:var(--s4)">run() · render() · hello()</div>
+      </div>
+    </div>
+  </div>
+  <footer class="q"><span class="qm">?</span><q>If each graph wins somewhere, can an agent show it?</q></footer>
+</section>
+
+<!-- ═══════════ 14 · EXPERIMENT: THE 3x3 ═══════════ -->
+<section class="slide" data-sect="The experiment">
+  <h2>The core 3x3: three questions, three graphs, <span class="grad">exactly one winner</span> per question</h2>
+  <div class="body">
+    <div class="m3">
+      <div></div>
+      <div class="ch syn" data-a style="--i:1"><svg><use href="#i-syn"/></svg>Syntax</div>
+      <div class="ch cmp" data-a style="--i:1"><svg><use href="#i-cmp"/></svg>Compiler</div>
+      <div class="ch con" data-a style="--i:1"><svg><use href="#i-con"/></svg>Contract</div>
+      <div class="rq" data-a style="--i:2"><b>T2</b><span>What does <code>run()</code> call?</span><small>web-app can't be built</small></div>
+      <div class="x w" data-a="pop" style="--i:5">✓</div><div class="x" data-a="pop" style="--i:3">✗</div><div class="x" data-a="pop" style="--i:3">✗</div>
+      <div class="rq" data-a style="--i:3"><b>T3</b><span>Who uses our <code>hello()</code>?</span><small>only 1 file may be opened</small></div>
+      <div class="x" data-a="pop" style="--i:4">✗</div><div class="x w" data-a="pop" style="--i:6">✓</div><div class="x" data-a="pop" style="--i:4">✗</div>
+      <div class="rq" data-a style="--i:4"><b>T4</b><span>What breaks if <code>greeting</code> goes?</span><small>a Python API field</small></div>
+      <div class="x" data-a="pop" style="--i:5">✗</div><div class="x" data-a="pop" style="--i:5">✗</div><div class="x w" data-a="pop" style="--i:7">✓</div>
+    </div>
+  </div>
+  <footer class="q"><span class="qm">?</span><q>How do we make sure the result is fair and repeatable?</q></footer>
+</section>
+
+<!-- ═══════════ 15 · EXPERIMENT: FAIR & REPEATABLE ═══════════ -->
+<section class="slide" data-sect="The experiment">
+  <h2>Each cell is a fresh, isolated Haiku session, graded against an answer key</h2>
+  <div class="body" style="gap:40px">
+    <div class="flow">
+      <div class="fn" data-a style="--i:1"><div class="kw">same</div><h3>Question + instructions</h3><div class="lbl">in every cell</div></div>
+      <div class="fa" data-a style="--i:2">→</div>
+      <div class="fn hi" data-a style="--i:3"><div class="kw">only difference</div><h3>The tools</h3>
+        <div style="display:flex;gap:8px"><svg width="40" height="40"><use href="#i-syn"/></svg><svg width="40" height="40"><use href="#i-cmp"/></svg><svg width="40" height="40"><use href="#i-con"/></svg></div></div>
+      <div class="fa" data-a style="--i:4">→</div>
+      <div class="fn" data-a style="--i:5"><div class="kw">× 3 runs</div><h3>Fresh Haiku session</h3><div class="lbl">isolated config, no shared state</div></div>
+      <div class="fa" data-a style="--i:6">→</div>
+      <div class="fn" data-a style="--i:7"><div class="kw">grader</div><h3>Opus vs answer key</h3><div class="lbl">no tools, sees only the answer</div></div>
+      <div class="fa" data-a style="--i:8">→</div>
+      <div class="fn hi" data-a style="--i:9"><div class="kw">verdict</div><h3>Majority of 3</h3><div class="lbl">PASS = matches expected</div></div>
+    </div>
+    <div class="row" style="flex:none;justify-content:center;gap:90px">
+      <div class="stat" data-a style="--i:10;flex:none;align-items:center"><div class="big cmp" data-count="9">9</div><div class="lbl">cells</div></div>
+      <div class="stat" data-a style="--i:11;flex:none;align-items:center"><div class="big cmp" data-count="3">3</div><div class="lbl">runs each</div></div>
+      <div class="stat" data-a style="--i:12;flex:none;align-items:center"><div class="big grad" data-count="27">27</div><div class="lbl">graded sessions</div></div>
+      <div class="stat" data-a style="--i:13;flex:none;align-items:center;justify-content:center"><div class="badge ok" style="font-size:30px">✓ tool checks run first, no model</div></div>
+    </div>
+  </div>
+  <footer class="q"><span class="qm">?</span><q>What should you take away before we run it?</q></footer>
+</section>
+
+<!-- ═══════════ W · WRAP-UP ═══════════ -->
+<section class="slide" data-sect="Wrap-up">
+  <h2>Choose the graph by the question</h2>
+  <div class="body" style="gap:44px">
+    <div class="wr">
+      <div class="qq" data-a="left" style="--i:1"><small>structure</small>What does this code call?</div><div class="ar" data-a style="--i:2">→</div>
+      <div class="gg syn" data-a="right" style="--i:3"><svg><use href="#i-syn"/></svg>Syntax graph</div>
+      <div class="qq" data-a="left" style="--i:4"><small>identity</small>Which one is it, exactly?</div><div class="ar" data-a style="--i:5">→</div>
+      <div class="gg cmp" data-a="right" style="--i:6"><svg><use href="#i-cmp"/></svg>Compiler index</div>
+      <div class="qq" data-a="left" style="--i:7"><small>interface</small>Who depends on this API?</div><div class="ar" data-a style="--i:8">→</div>
+      <div class="gg con" data-a="right" style="--i:9"><svg><use href="#i-con"/></svg>Contract graph</div>
+      <div class="qq" data-a="left" style="--i:10"><small>freshness</small>Is it still true?</div><div class="ar" data-a style="--i:11">→</div>
+      <div class="gg trap" data-a="right" style="--i:12"><svg style="color:var(--trap)"><use href="#i-clock"/></svg>Republish, or search live</div>
+    </div>
+    <div data-a style="--i:13"><span class="cta">▶ Let's run it</span></div>
+  </div>
+  <footer class="q"><span class="qm">?</span><q>Questions before we run the 3x3 live?</q></footer>
+</section>
+
+</div>
+
+<script>
+(function(){
+var stage=document.getElementById('stage'), slides=[].slice.call(document.querySelectorAll('.slide')),
+    bar=document.getElementById('progress'), cur=-1,
+    LOGO='https://cdn.jsdelivr.net/gh/am-consultingai/am-assets@v3/logo/am-logo-white-600.png';
+var reduce=/static/.test(location.search);
+if(reduce) document.documentElement.classList.add('static');
+var C={syn:'#818cf8',cmp:'#22d3ee',con:'#34d399',trap:'#fbbf24',red:'#f87171',ink:'#f3f4f6',s2:'#dde4ee',s3:'#b9c4d3',s4:'#9aa6b8',card:'#111a2c',line:'rgba(148,163,184,.45)'};
+var NSURI='http://www.w3.org/2000/svg';
+function el(tag,attrs,parent,text){ var e=document.createElementNS(NSURI,tag); for(var k in attrs) e.setAttribute(k,attrs[k]);
+  if(text!=null) e.textContent=text; if(parent) parent.appendChild(e); return e }
+
+/* ── frame: logo, section dots, section name and slide number ── */
+var SECTS=['Why graphs','Graph types','The code','Three graphs','The experiment'];
+slides.forEach(function(s,i){
+  if(!s.dataset.sect) return;
+  var top=document.createElement('div'); top.className='top';
+  var si=SECTS.indexOf(s.dataset.sect), dots='';
+  if(si>=0){ for(var k=0;k<SECTS.length;k++) dots+='<i class="'+(k===si?'on':k<si?'done':'')+'"></i>'; }
+  top.innerHTML='<img src="'+LOGO+'" alt="AM Consulting"><div class="secs">'+dots+'</div><div class="sect">'+s.dataset.sect+
+    '<span class="n">'+(i+1)+' / '+slides.length+'</span></div>';
+  if(si<0) top.querySelector('.secs').style.marginLeft='auto';
+  s.insertBefore(top,s.firstChild);
+});
+
+/* ── scale the 1920×1080 stage ── */
+function fit(){ stage.style.setProperty('--scale',Math.min(innerWidth/1920,innerHeight/1080)) }
+addEventListener('resize',fit); fit();
+
+/* ── count-up ── */
+function countUp(e){
+  var to=parseFloat(e.dataset.count), from=parseFloat(e.dataset.from||0), fmt=e.dataset.fmt||'#';
+  var show=function(v){ e.textContent=fmt.replace('#',Math.round(v)) };
+  if(reduce){ show(to); return }
+  var t0=0, dur=1200;
+  (function step(){ var t=performance.now(); t0=t0||t; var k=Math.min(1,(t-t0)/dur); show(from+(to-from)*(1-Math.pow(1-k,3))); if(k<1) setTimeout(step,16) })();
+}
+
+/* ── navigation ── */
+function go(n){
+  n=Math.max(0,Math.min(slides.length-1,n)); if(n===cur) return;
+  if(cur>=0) slides[cur].classList.remove('on');
+  cur=n; var s=slides[cur]; void s.offsetWidth; s.classList.add('on');
+  s.querySelectorAll('[data-count]').forEach(countUp);
+  bar.style.width=((cur+1)/slides.length*100)+'%';
+  history.replaceState(null,'','#'+(cur+1));
+}
+addEventListener('keydown',function(e){
+  var k=e.key;
+  if(k==='ArrowRight'||k==='PageDown'||k===' '||k==='ArrowDown'){ e.preventDefault(); go(cur+1) }
+  else if(k==='ArrowLeft'||k==='PageUp'||k==='ArrowUp'){ e.preventDefault(); go(cur-1) }
+  else if(k==='Home') go(0); else if(k==='End') go(slides.length-1);
+  else if(k==='f'||k==='F'){ document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen() }
+});
+stage.addEventListener('click',function(e){ if(e.target.closest('a,button')) return; go(cur+(e.clientX<innerWidth/3?-1:1)) });
+var tx=null;
+addEventListener('touchstart',function(e){ tx=e.touches[0].clientX },{passive:true});
+addEventListener('touchend',function(e){ if(tx===null) return; var dx=e.changedTouches[0].clientX-tx;
+  if(Math.abs(dx)>50) go(cur+(dx<0?1:-1)); tx=null });
+
+/* ════════ visuals ════════ */
+
+/* cover: a drifting network in the three graph colours */
+(function(){
+  var g=document.getElementById('coverNet'), pts=[], cols=[C.syn,C.cmp,C.con], seed=7;
+  function rnd(){ seed=(seed*16807)%2147483647; return seed/2147483647 }
+  for(var i=0;i<26;i++) pts.push([90+rnd()*640,90+rnd()*640,cols[i%3]]);
+  pts.forEach(function(p,i){ pts.forEach(function(q,j){ if(j<=i) return; var d=Math.hypot(p[0]-q[0],p[1]-q[1]);
+    if(d<190) el('line',{x1:p[0],y1:p[1],x2:q[0],y2:q[1],stroke:p[2],'stroke-opacity':.28,'stroke-width':2,class:'draw',pathLength:1,style:'--d:'+(0.3+i*0.04)+'s'},g) }) });
+  pts.forEach(function(p,i){ el('circle',{cx:p[0],cy:p[1],r:6+(i%4)*3,fill:p[2],'fill-opacity':.85,class:'fade',style:'--d:'+(0.2+i*0.05)+'s'},g) });
+})();
+
+/* slide 1: the fog of other repos */
+(function(){
+  var g=document.getElementById('fogRepos'), pos=[[560,40],[760,190],[1000,40],[560,330],[900,330],[1220,90],[1260,360],[1480,40],[1480,330],[1120,200]];
+  pos.forEach(function(p,i){ el('rect',{x:p[0],y:p[1],width:200,height:150,rx:18,fill:'#0f1626',stroke:'rgba(148,163,184,.22)','stroke-width':2,class:'fade',style:'--d:'+(0.4+i*0.06)+'s'},g);
+    el('text',{x:p[0]+100,y:p[1]+88,'text-anchor':'middle',style:'font-size:56px;fill:#2a3650;font-family:var(--display);font-weight:700',class:'fade'},g,'?') });
+})();
+
+/* slide 2: files streaming into the agent vs a mini graph */
+(function(){
+  var g=document.getElementById('readFiles');
+  for(var r=0;r<4;r++) for(var c=0;c<7;c++){ var x=20+c*80, y=20+r*78;
+    el('use',{href:'#i-file',x:x,y:y,width:48,height:60,class:'fade',style:'--d:'+(0.3+(r*7+c)*0.03)+'s'},g) }
+  for(var i=0;i<6;i++) el('path',{d:'M'+(560)+' '+(50+i*45)+' C 600 '+(50+i*45)+', 600 170, 636 170',fill:'none',stroke:C.red,'stroke-opacity':.55,'stroke-width':2.5,class:'draw',pathLength:1,style:'--d:'+(0.9+i*0.1)+'s'},g);
+  var m=document.getElementById('miniGraph'), N=[[60,80,C.syn],[150,40,C.cmp],[150,150,C.cmp],[240,90,C.con],[90,230,C.syn],[220,240,C.cmp],[40,160,C.con]];
+  [[0,1],[0,2],[1,3],[2,3],[0,6],[6,4],[4,5],[2,5]].forEach(function(e,i){ el('line',{x1:N[e[0]][0],y1:N[e[0]][1],x2:N[e[1]][0],y2:N[e[1]][1],stroke:'#5b6b82','stroke-width':3,class:'draw',pathLength:1,style:'--d:'+(0.4+i*0.08)+'s'},m) });
+  N.forEach(function(n,i){ el('circle',{cx:n[0],cy:n[1],r:15,fill:n[2],class:'fade',style:'--d:'+(0.3+i*0.07)+'s'},m) });
+  el('path',{d:'M260 95 C 300 95, 300 68, 326 68',fill:'none',stroke:C.cmp,'stroke-width':3,class:'draw',pathLength:1,style:'--d:1.3s'},m);
+})();
+
+/* slide 3: timeline dots */
+(function(){
+  var g=document.getElementById('tlDots'), xs=[.06,.22,.36,.50,.64,.78,.91], cols=[C.syn,'#38bdf8',C.con,C.cmp,C.syn,C.cmp,C.ink];
+  xs.forEach(function(x,i){ var cx=40+x*(1690-40)*1.0; cx=x*1728;
+    el('line',{x1:cx,y1:i%2?200:150,x2:cx,y2:i%2?250:200,stroke:cols[i],'stroke-width':3,class:'fade',style:'--d:'+(0.35+i*0.14)+'s'},g);
+    el('circle',{cx:cx,cy:200,r:i===6?18:13,fill:cols[i],class:'fade',style:'--d:'+(0.3+i*0.14)+'s'},g) });
+})();
+
+/* slide 5: three stacked layers */
+(function(){
+  var g=document.getElementById('layers');
+  var L=[
+    {y:40, c:C.con, name:'Contract graph', layer:'Interface', items:['API field ↔ client query','event ↔ handler']},
+    {y:220,c:C.cmp, name:'Compiler index', layer:'Identity',  items:['this hello, not that one','across repos via packages']},
+    {y:400,c:C.syn, name:'Syntax graph',   layer:'Structure', items:['files · functions','calls · imports']}];
+  L.forEach(function(l,i){
+    var grp=el('g',{class:'fade',style:'--d:'+(0.3+i*0.35)+'s'},g);
+    el('path',{d:'M420 '+(l.y+40)+' L620 '+l.y+' L1300 '+l.y+' L1100 '+(l.y+120)+' L300 '+(l.y+120)+' Z',fill:l.c,'fill-opacity':.14,stroke:l.c,'stroke-width':3},grp);
+    el('use',{href:'#i-'+['con','cmp','syn'][i],x:330,y:l.y+18,width:70,height:70},grp);
+    el('text',{x:440,y:l.y+82,style:'font-family:var(--display);font-size:46px;font-weight:700;fill:'+l.c},grp,l.layer);
+    el('text',{x:720,y:l.y+60,style:'font-size:28px;fill:#f3f4f6'},grp,l.items[0]);
+    el('text',{x:720,y:l.y+98,style:'font-size:28px;fill:#b9c4d3'},grp,l.items[1]);
+    el('text',{x:1340,y:l.y+72,style:'font-family:var(--mono);font-size:26px;letter-spacing:.08em;fill:'+l.c},grp,l.name.toUpperCase());
+  });
+})();
+
+/* slides 8 and 9: the toy-org map */
+function orgMap(id,traps){
+  var s=document.getElementById(id);
+  var R=[
+    {k:'lib', x:20,  name:'greet-lib', lang:'TS', items:['hello(name)','goodbye(name)','npm package']},
+    {k:'web', x:460, name:'web-app',   lang:'TS', items:['run() → hello, render','4 files import greet-lib','queries.graphql']},
+    {k:'api', x:900, name:'greet-api', lang:'Py', items:['greeting · farewell','resolvers.py','emit(USER_GREETED)']},
+    {k:'mail',x:1340,name:'mail-app',  lang:'TS', items:['onEvent(USER_GREETED)','sendWelcomeMail()']}];
+  R.forEach(function(r,i){
+    var dim=traps&&r.k!=='web';
+    var g=el('g',{class:'fade',style:'--d:'+(0.2+i*0.15)+'s'+(dim?';opacity:.4':'')},s);
+    el('rect',{x:r.x,y:130,width:370,height:320,rx:24,fill:'#0d1321',stroke:traps&&!dim?C.trap:'rgba(148,163,184,.3)','stroke-width':traps&&!dim?3:2},g);
+    el('text',{x:r.x+28,y:190,style:'font-family:var(--display);font-size:38px;font-weight:600;fill:#f3f4f6'},g,r.name);
+    el('rect',{x:r.x+290,y:160,width:56,height:38,rx:9,fill:r.lang==='Py'?'rgba(251,191,36,.16)':'rgba(56,189,248,.16)'},g);
+    el('text',{x:r.x+318,y:187,'text-anchor':'middle',class:'mono',style:'font-size:20px;font-weight:600;fill:'+(r.lang==='Py'?'#fbbf24':'#38bdf8')},g,r.lang);
+    r.items.forEach(function(t,j){ el('rect',{x:r.x+24,y:224+j*66,width:322,height:50,rx:10,fill:'#0a1626'},g);
+      el('text',{x:r.x+40,y:257+j*66,class:'mono',style:'font-size:20px;fill:#67e8f9'},g,t) });
+  });
+  var A=[{x1:460,x2:390,c:C.cmp,t:'imports hello()',y:290},{x1:830,x2:900,c:C.con,t:'queries greeting',y:290},{x1:1270,x2:1340,c:C.con,t:'USER_GREETED',y:290}];
+  var defs=el('defs',{},s);
+  [['a1',C.cmp],['a2',C.con]].forEach(function(m){ var mk=el('marker',{id:id+m[0],viewBox:'0 0 10 10',refX:8,refY:5,markerWidth:6,markerHeight:6,orient:'auto'},defs); el('path',{d:'M0,0 L10,5 L0,10 z',fill:m[1]},mk) });
+  A.forEach(function(a,i){ el('path',{d:'M'+a.x1+' '+a.y+' L'+a.x2+' '+a.y,stroke:a.c,'stroke-width':5,'marker-end':'url(#'+id+(a.c===C.cmp?'a1':'a2')+')',class:'draw',pathLength:1,style:'--d:'+(0.9+i*0.25)+'s'+(traps?';opacity:.5':'')},s);
+    el('text',{x:(a.x1+a.x2)/2,y:90,'text-anchor':'middle',class:'mono fade',style:'font-size:22px;fill:'+a.c+';--d:'+(1.1+i*0.25)+'s'+(traps?';opacity:.5':'')},s,a.t);
+    el('line',{x1:(a.x1+a.x2)/2,y1:100,x2:(a.x1+a.x2)/2,y2:a.y-8,stroke:a.c,'stroke-width':1.5,'stroke-dasharray':'4 4',class:'fade',style:'--d:'+(1.1+i*0.25)+'s'+(traps?';opacity:.5':'')},s) });
+  if(!traps) return;
+  /* five numbered pins */
+  var P=[[818,236,1],[818,302,2],[700,150,3],[865,260,4],[818,368,5]];
+  P.forEach(function(p,i){ var g=el('g',{class:'fade',style:'--d:'+(0.7+i*0.25)+'s'},s);
+    el('circle',{cx:p[0],cy:p[1],r:24,fill:'#fbbf24'},g);
+    el('text',{x:p[0],y:p[1]+9,'text-anchor':'middle',style:'font-family:var(--display);font-weight:700;font-size:26px;fill:#06121a'},g,p[2]) });
+}
+orgMap('orgMap',false); orgMap('orgTraps',true);
+
+/* slides 11–13: graph diagrams */
+function draw(id,g){
+  var svg=document.getElementById(id); svg.setAttribute('viewBox','0 0 '+g.w+' '+g.h);
+  var defs=el('defs',{},svg);
+  [['def','rgba(148,163,184,.75)'],['imports',C.s2],['calls',C.syn],['ref',C.cmp],['refc',C.con],['miss',C.red]].forEach(function(m){
+    var mk=el('marker',{id:id+'-'+m[0],viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:6,markerHeight:6,orient:'auto-start-reverse'},defs);
+    el('path',{d:'M0,0 L10,5 L0,10 z',fill:m[1]},mk) });
+  (g.lanes||[]).forEach(function(l){ var gl=el('g',{class:'lane'},svg); el('rect',{x:l.x,y:l.y,width:l.w,height:l.h,rx:16},gl); el('text',{x:l.x+18,y:l.y+32},gl,l.label) });
+  (g.extra||[]).forEach(function(f){ f(svg) });
+  var N={}; g.nodes.forEach(function(n){ N[n.id]=Object.assign({w:220,h:66},n) });
+  var EL=el('g',{},svg), i=0;
+  g.edges.forEach(function(e){
+    var s=N[e[0]], t=N[e[1]], k=e[2]||'', sx,sy,ex,ey,d;
+    if(t.x>=s.x+s.w){ sx=s.x+s.w; sy=s.y+s.h/2; ex=t.x; ey=t.y+t.h/2 }
+    else if(t.x+t.w<=s.x){ sx=s.x; sy=s.y+s.h/2; ex=t.x+t.w; ey=t.y+t.h/2 }
+    else { sx=s.x+s.w/2; ex=t.x+t.w/2; if(t.y>s.y){ sy=s.y+s.h; ey=t.y } else { sy=s.y; ey=t.y+t.h } }
+    if(sy===s.y+s.h/2){ var dx=(ex-sx)/2; d='M'+sx+','+sy+' C'+(sx+dx)+','+sy+' '+(ex-dx)+','+ey+' '+ex+','+ey }
+    else d='M'+sx+','+sy+' L'+ex+','+ey;
+    var attrs={class:'e '+k+(k==='miss'?' fade':' draw'),d:d,'marker-end':'url(#'+id+'-'+(k||'def')+')',style:'--d:'+(0.6+i*0.12)+'s'};
+    if(k!=='miss') attrs.pathLength=1;
+    el('path',attrs,EL); i++;
+    var vert=(sx===ex); if(e[3]) el('text',{class:'el fade '+k,x:(sx+ex)/2+(vert?14:0),y:(sy+ey)/2+(vert?6:-10),'text-anchor':vert?'start':'middle',style:'--d:'+(0.9+i*0.12)+'s'},svg,e[3]);
+  });
+  g.nodes.forEach(function(n0,j){ var n=N[n0.id];
+    var gn=el('g',{class:'node fade '+(n.k||''),style:'--d:'+(0.2+j*0.05)+'s'},svg);
+    el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,rx:12},gn);
+    el('text',{class:'nl',x:n.x+16,y:n.y+(n.s?28:41)},gn,n.t);
+    if(n.s) el('text',{class:'ns',x:n.x+16,y:n.y+53},gn,n.s) });
+  (g.notes||[]).forEach(function(n){ el('text',{class:'note fade '+(n.k||''),x:n.x,y:n.y,style:'--d:1.8s'},svg,n.t) });
+}
+
+draw('gSyn',{w:1120,h:640,
+  lanes:[{x:10,y:10,w:740,h:620,label:'web-app'},{x:780,y:10,w:330,h:620,label:'greet-lib'}],
+  nodes:[
+    {id:'run',x:40,y:70,w:200,t:'run()',s:'main.ts:4'},
+    {id:'ren',x:40,y:200,w:200,t:'render()',s:'render.ts:1'},
+    {id:'lh',x:40,y:500,w:200,t:'hello()',s:'local.ts · its own',k:'trap'},
+    {id:'main',x:300,y:70,w:170,t:'main.ts'},
+    {id:'renF',x:300,y:200,w:170,t:'render.ts'},
+    {id:'foot',x:300,y:320,w:170,t:'footer.ts'},
+    {id:'out',x:300,y:410,w:170,t:'logout.ts'},
+    {id:'loc',x:300,y:500,w:170,t:'local.ts'},
+    {id:'ext',x:530,y:365,w:200,t:'"greet-lib"',s:'package name only',k:'ext'},
+    {id:'gh',x:810,y:200,w:270,t:'hello()',s:'src/index.ts:1'},
+    {id:'gg',x:810,y:320,w:270,t:'goodbye()',s:'src/index.ts:5'}],
+  edges:[['main','run'],['renF','ren'],['loc','lh'],['run','ren','calls','calls'],['main','renF','imports'],
+    ['main','ext','imports'],['foot','ext','imports'],['out','ext','imports'],['loc','ext','imports'],['ext','gh','miss','no edge']],
+  notes:[{x:40,y:610,t:'run() → hello("World") is not an edge',k:'miss'}]});
+
+draw('gScip',{w:1120,h:640,
+  lanes:[{x:10,y:10,w:700,h:620,label:'web-app · occurrence → symbol'},{x:740,y:10,w:370,h:620,label:'greet-lib'}],
+  nodes:[
+    {id:'m1',x:35,y:60,w:260,t:'main.ts:1',s:'import { hello }',k:'hit'},
+    {id:'m5',x:35,y:145,w:260,t:'main.ts:5',s:'call inside run()',k:'hit'},
+    {id:'f',x:35,y:270,w:260,t:'footer.ts:1, :4'},
+    {id:'lo',x:35,y:355,w:260,t:'logout.ts:1, :4'},
+    {id:'lc',x:35,y:440,w:260,t:'local.ts:1, :8'},
+    {id:'sh',x:400,y:102,w:285,t:'hello()',s:'greet-lib (package)'},
+    {id:'sg',x:400,y:355,w:285,t:'goodbye()',s:'greet-lib (package)'},
+    {id:'sl',x:400,y:540,w:285,t:'hello()',s:'web-app local.ts · 0 refs',k:'trap'},
+    {id:'gh',x:770,y:102,w:300,t:'hello()',s:'src/index.ts:1',k:'hit'},
+    {id:'gg',x:770,y:355,w:300,t:'goodbye()',s:'src/index.ts:5'}],
+  edges:[['m1','sh','ref'],['m5','sh','ref'],['f','sg','ref'],['lo','sg','ref'],['lc','sg','ref'],
+    ['sh','gh','ref'],['sg','gg','ref']],
+  notes:[{x:765,y:610,t:'linked by export name'}]});
+
+draw('gCon',{w:1120,h:620,
+  lanes:[{x:10,y:10,w:450,h:600,label:'greet-api · Python'},{x:610,y:10,w:500,h:270,label:'web-app · TypeScript'},{x:610,y:310,w:500,h:300,label:'mail-app · TypeScript'}],
+  extra:[function(svg){ el('line',{x1:535,y1:20,x2:535,y2:600,stroke:'rgba(251,191,36,.5)','stroke-width':3,'stroke-dasharray':'10 10'},svg);
+    el('text',{x:535,y:612,'text-anchor':'middle',style:'font-size:18px;fill:#fbbf24;font-family:var(--mono)'},svg,'language boundary') }],
+  nodes:[
+    {id:'fG',x:35,y:70,w:400,t:'Query.greeting',s:'schema field',k:'hitc'},
+    {id:'fF',x:35,y:170,w:400,t:'Query.farewell',s:'schema field · no users',k:'dimn'},
+    {id:'eS',x:35,y:400,w:400,t:'USER_GREETED',s:'event source · emit()'},
+    {id:'fu',x:630,y:70,w:200,t:'greeting',s:'field use',k:'hitc'},
+    {id:'op',x:850,y:70,w:240,t:'query Greet',s:'operation'},
+    {id:'pv',x:630,y:170,w:460,t:'PAGE_VIEWED → trackPageView',s:'subscriber · no source',k:'dimn'},
+    {id:'wh',x:630,y:380,w:460,t:'USER_GREETED → sendWelcomeMail',s:'event subscriber',k:'hitc'},
+    {id:'dd',x:630,y:480,w:460,t:'DAILY_DIGEST → sendDailyDigest',s:'subscriber · no source',k:'dimn'}],
+  edges:[['op','fu','imports'],['fu','fG','refc','same Type.field'],['eS','wh','refc','same event name']]});
+
+go(Math.max(0,(parseInt(location.hash.slice(1),10)||1)-1));
+})();
+</script>
+</body>
+</html>

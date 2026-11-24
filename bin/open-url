@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Browser opener for the sign-in step only (used as $BROWSER by `bin/session login`).
+# Prints the link so it can always be opened by hand, then asks Windows to open it.
+url="${1:-}"
+[ -n "$url" ] || exit 1
+{ printf '\n  Sign-in link (open it in your browser if it does not open by itself):\n\n  %s\n\n' "$url" > /dev/tty; } 2>/dev/null || printf '%s\n' "$url"
+if [ -x /mnt/c/Windows/explorer.exe ]; then
+  /mnt/c/Windows/explorer.exe "$url" >/dev/null 2>&1 || true
+fi
+exit 0

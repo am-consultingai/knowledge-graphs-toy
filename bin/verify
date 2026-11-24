@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+"""Agent-level verification: run every scenario in every configuration, grade, and assert the expected result.
+
+  bin/verify [--reps 3] [--parallel 6] [--model claude-haiku-5-5] [--store-mode central] [scenario ...]
+
+A cell (scenario x configuration) takes the majority verdict over its repetitions. Expected "correct" passes
+when the majority is correct; expected "wrong" passes when the majority is not correct (wrong or partial).
+Writes results/verify-<time>.md (and .json) and prints the table. Exit code 1 if any cell fails.
+"""
+import argparse
+import collections
+import datetime
+import json
+import subprocess
+import sys
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+P = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(P / "harness"))
+from grade import grade  # noqa: E402
+
+ap = argparse.ArgumentParser()
+ap.add_argument("scenarios", nargs="*"); ap.add_argument("--reps", type=int, default=3)
+ap.add_argument("--parallel", type=int, default=6); ap.add_argument("--model", default="claude-haiku-5-5")
+ap.add_argument("--store-mode", default="central")
+ap.add_argument("--configs", default="X-A0,X-A1,X-G2,X-G3,X-G4,X-A5", help="comma-separated configurations")
+ap.add_argument("--core", action="store_true", help="the core 3x3: scenarios T2 T3 T4 x configurations X-G2 X-G3 X-G4")
+a = ap.parse_args()
+if a.core:
+    a.scenarios, a.configs = ["T2", "T3", "T4"], "X-G2,X-G3,X-G4"
+names = a.scenarios or sorted(p.stem for p in (P / "scenarios").glob("*.json"))
+CONFIGS = a.configs.split(",")
+stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+jobs = [(s, c, r) for s in names for c in CONFIGS for r in range(1, a.reps + 1)]
+print(f"verify {stamp}: {len(names)} scenarios x {len(CONFIGS)} configurations x {a.reps} reps = {len(jobs)} runs "
+      f"({a.model}, store {a.store_mode}, {a.parallel} in parallel)")
+
+
+def job(j):
+    s, c, r = j
+    rid = f"{s}-{c}-r{r}-v{stamp}"
+    out = subprocess.run([str(P / "bin/run-question"), s, c, "--rep", str(r), "--model", a.model, "--store-mode", a.store_mode,
+                          "--run-id", rid], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    ck_path = P / "results/raw" / f"{rid}.checks.json"
+    if not ck_path.exists():
+        return j, {"valid": False, "problems": ["run failed: " + out.stderr[-200:]]}, {"verdict": "error", "summary": ""}
+    ck = json.loads(ck_path.read_text())
+    g = grade(ck)
+    print(f"  {s} {c} r{r}: {g['verdict']:<8} {'valid' if ck['valid'] else 'INVALID ' + str(ck['problems'])[:80]}", flush=True)
+    return j, ck, g
+
+
+with ThreadPoolExecutor(max_workers=a.parallel) as ex:
+    results = list(ex.map(job, jobs))
+
+cells = collections.defaultdict(list)
+for (s, c, r), ck, g in results:
+    cells[(s, c)].append((ck, g))
+rows, failed, report = [], 0, {}
+for s in names:
+    sc = json.loads((P / "scenarios" / f"{s}.json").read_text())
+    line = []
+    for c in CONFIGS:
+        runs = cells[(s, c)]
+        verdicts = [g["verdict"] for ck, g in runs]
+        invalid = [ck for ck, g in runs if not ck.get("valid")]
+        n_correct = verdicts.count("correct")
+        majority_correct = n_correct > len(runs) / 2
+        exp = sc["expected"][c]
+        ok = (majority_correct if exp == "correct" else not majority_correct) and not invalid
+        failed += not ok
+        toks = sorted(ck.get("tokens_in", 0) for ck, g in runs)
+        line.append(f"{'PASS' if ok else 'FAIL'} {n_correct}/{len(runs)}")
+        report[f"{s}/{c}"] = {"expected": exp, "verdicts": verdicts, "pass": ok, "invalid": len(invalid),
+                              "median_tokens_in": toks[len(toks) // 2] if toks else None,
+                              "runs": [ck.get("run_id") for ck, g in runs], "summaries": [g.get("summary") for ck, g in runs]}
+    rows.append((s, sc["title"], line, [sc["expected"][c] for c in CONFIGS]))
+
+hdr = "| Scenario | " + " | ".join(CONFIGS) + " |"
+md = [f"# Verify {stamp}", "", f"{a.model}, store mode {a.store_mode}, {a.reps} run(s) per cell. "
+      "Cell = PASS/FAIL against the expected result, then correct answers / runs.", "", hdr,
+      "|" + "---|" * (len(CONFIGS) + 1)]
+for s, title, line, exp in rows:
+    md.append(f"| **{s}** {title} | " + " | ".join(f"{l} (exp. {e})" for l, e in zip(line, exp)) + " |")
+md += ["", f"**{'ALL CELLS PASSED' if not failed else f'{failed} CELL(S) FAILED'}**"]
+(P / "results").mkdir(exist_ok=True)
+(P / "results" / f"verify-{stamp}.md").write_text("\n".join(md) + "\n")
+(P / "results" / f"verify-{stamp}.json").write_text(json.dumps(report, indent=1))
+print("\n".join(md))
+sys.exit(1 if failed else 0)

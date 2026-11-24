@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "blockReadsOutsideWorkingDirectories": true,
+    "allow": [
+      "mcp__org__*"
+    ],
+    "deny": [
+      "Edit",
+      "Write",
+      "NotebookEdit",
+      "Agent",
+      "WebFetch",
+      "WebSearch",
+      "Bash(env*)",
+      "Bash(printenv*)",
+      "Bash(set)",
+      "CronCreate",
+      "CronDelete",
+      "CronList",
+      "EnterWorktree",
+      "ExitWorktree",
+      "ListAgents",
+      "SendMessage",
+      "Monitor",
+      "RemoteTrigger",
+      "ScheduleWakeup",
+      "TaskStop",
+      "Workflow",
+      "ReportFindings"
+    ]
+  },
+  "claudeMdExcludes": [
+    "/home/am/projects/learning/salesforce/knowledge-graphs-toy/worlds/**"
+  ],
+  "autoMemoryEnabled": false
+}

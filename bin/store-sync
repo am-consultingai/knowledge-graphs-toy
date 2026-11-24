@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+"""The central store: link every repo's LATEST artefacts into one graph per layer.
+
+  bin/store-sync <world>        -> worlds/<world>/central/<time>/ ; CURRENT points at it
+"""
+import datetime
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+P = Path(__file__).resolve().parent.parent
+PY = str(P / "tools/.venv-store/bin/python")
+if os.environ.get("HOME", "") != str(P / ".sandbox/home") or sys.executable != PY:
+    os.execv(str(P / "bin/sandbox"), [str(P / "bin/sandbox"), "--", PY, *sys.argv])
+sys.path.insert(0, str(P / "graphs"))
+import contract_lib, scip_lib  # noqa: E402,E401
+
+world = sys.argv[1]
+W = P / "worlds" / world
+ORG = json.loads((P / "org.json").read_text())
+latest = {r: (W / "registry" / r / "LATEST").read_text().strip() for r in ORG["repos"] if (W / "registry" / r / "LATEST").exists()}
+art = {r: W / "registry" / r / v for r, v in latest.items()}
+snap = W / "central" / datetime.datetime.now().strftime("%Y%m%dT%H%M%S%f")[:-3]
+for sub in ("l2", "l3", "l4"):
+    (snap / sub).mkdir(parents=True)
+graphs = []
+for r, a in art.items():
+    if (a / "graph.json").exists():
+        d = snap / "l2/byrepo" / r / "graphify-out"; d.mkdir(parents=True)
+        os.link(a / "graph.json", d / "graph.json"); graphs.append(str(d / "graph.json"))
+subprocess.run([str(P / "tools/.venv/bin/graphify"), "merge-graphs", *graphs, "--out", str(snap / "l2/graph.json")],
+               cwd=snap / "l2", env=dict(os.environ, GRAPHIFY_OUT=str(snap / "l2/out")), check=True, stdout=subprocess.DEVNULL)
+l3 = scip_lib.combine({r: a / "l3.db" for r, a in art.items() if (a / "l3.db").exists()}, snap / "l3/scip.db")
+l4 = contract_lib.link({r: json.loads((a / "contract.json").read_text()) for r, a in art.items() if (a / "contract.json").exists()},
+                       ORG, snap / "l4/contract.db")
+(snap / "manifest.json").write_text(json.dumps({"artefacts": latest, "l3": l3, "l4": l4}, indent=1))
+(W / "central" / "CURRENT").write_text(snap.name + "\n")
+print(f"central {world}: {snap.name}  artefacts={latest}  l3={l3}")

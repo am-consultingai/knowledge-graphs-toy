@@ -1,0 +1,4 @@
+{
+  "description": "own repo + code search + open files (baseline)",
+  "mcp_layers": "search,read"
+}

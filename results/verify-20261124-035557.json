@@ -1,0 +1,128 @@
+{
+ "T5/X-A0": {
+  "expected": "wrong",
+  "verdicts": [
+   "partial",
+   "wrong",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 28559,
+  "runs": [
+   "T5-X-A0-r1-v20261124-035557",
+   "T5-X-A0-r2-v20261124-035557",
+   "T5-X-A0-r3-v20261124-035557"
+  ],
+  "summaries": [
+   "The agent names mail-app as the likely consumer but never finds the sendWelcomeMail handler at mail-app/src/webhooks.ts:10, leaves web-app and greet-lib as possible consumers, and even claims no other repo can receive the event, though it names no trap file.",
+   "The agent found no consumer, mentioning mail-app only as an unverified CLAUDE.md hint, and gave no handler or file:line in mail-app, which fits the key's 'nothing found' case.",
+   "The agent found no consumer code: it mentioned mail-app only as an unverified CLAUDE.md claim, gave no mail-app file:line, never identified the sendWelcomeMail handler, and left web-app/greet-lib open as possible subscribers, which matches the key's 'nothing found' wrong case."
+  ]
+ },
+ "T5/X-A1": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 78364,
+  "runs": [
+   "T5-X-A1-r1-v20261124-035557",
+   "T5-X-A1-r2-v20261124-035557",
+   "T5-X-A1-r3-v20261124-035557"
+  ],
+  "summaries": [
+   "The agent identifies mail-app/src/webhooks.ts:10 registering sendWelcomeMail (mail.ts:1) as the only reaction to USER_GREETED and names no trap files as reacting.",
+   "The agent identifies mail-app/src/webhooks.ts:10 registering sendWelcomeMail (mail.ts:1) as the only reaction to USER_GREETED, correctly excludes web-app's PAGE_VIEWED handler, and names no trap file as reacting.",
+   "The agent identified mail-app/src/webhooks.ts:10 registering sendWelcomeMail for USER_GREETED as the only reaction and named no trap file; it left the handler body unverified, but the scoring rule does not require it."
+  ]
+ },
+ "T5/X-G2": {
+  "expected": "wrong",
+  "verdicts": [
+   "wrong",
+   "wrong",
+   "partial"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 71935,
+  "runs": [
+   "T5-X-G2-r1-v20261124-035557",
+   "T5-X-G2-r2-v20261124-035557",
+   "T5-X-G2-r3-v20261124-035557"
+  ],
+  "summaries": [
+   "The agent found no consumer, never identified mail-app/src/webhooks.ts:10 or sendWelcomeMail, and only called mail-app a likely but unverified consumer based on CLAUDE.md, which is the key's 'nothing found' case.",
+   "The agent states it found no repository reacting to USER_GREETED and mentions mail-app only as an unconfirmed hint, without mail-app/src/webhooks.ts:10 or sendWelcomeMail, which falls under the key's 'nothing found' case.",
+   "The agent correctly identifies mail-app/src/webhooks.ts:10 registering sendWelcomeMail for USER_GREETED, but leaves the trap files web-app/src/analytics.ts and mail-app/digest.ts open as possible subscribers instead of stating mail-app is the only reaction."
+  ]
+ },
+ "T5/X-G3": {
+  "expected": "wrong",
+  "verdicts": [
+   "wrong",
+   "partial",
+   "wrong"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 69925,
+  "runs": [
+   "T5-X-G3-r1-v20261124-035557",
+   "T5-X-G3-r2-v20261124-035557",
+   "T5-X-G3-r3-v20261124-035557"
+  ],
+  "summaries": [
+   "The agent found no consuming repository and did not identify mail-app/src/webhooks.ts:10 registering sendWelcomeMail, which the key scores as 'nothing found' (mentioning mail-app only as a place to check does not count as naming it as the reactor).",
+   "The agent correctly identifies mail-app/src/webhooks.ts:10 registering sendWelcomeMail for USER_GREETED, but leaves web-app/src/analytics.ts and mail-app/src/digest.ts as possible listeners instead of saying mail-app is the only reaction, which the key scores as partial.",
+   "The agent found no other repository reacting to USER_GREETED and did not identify mail-app/src/webhooks.ts:10 registering sendWelcomeMail, so under the key's rule this counts as 'nothing found'."
+  ]
+ },
+ "T5/X-G4": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 55252,
+  "runs": [
+   "T5-X-G4-r1-v20261124-035557",
+   "T5-X-G4-r2-v20261124-035557",
+   "T5-X-G4-r3-v20261124-035557"
+  ],
+  "summaries": [
+   "The agent names mail-app/src/webhooks.ts:10 registering sendWelcomeMail for USER_GREETED as the only reaction and names no trap file, which meets the key's correct criteria even though it did not confirm that the handler logs a welcome message.",
+   "The agent names mail-app/src/webhooks.ts:10 registering sendWelcomeMail for USER_GREETED as the only reaction from another repo, and names no trap file as a subscriber, which meets the key's correct criterion even though it could not confirm what the handler body does.",
+   "The agent identifies mail-app/src/webhooks.ts:10 registering sendWelcomeMail for USER_GREETED as the only reaction from another repo and names no trap files; it could not confirm what sendWelcomeMail does, but the key's correct criterion does not require that."
+  ]
+ },
+ "T5/X-A5": {
+  "expected": "correct",
+  "verdicts": [
+   "correct",
+   "correct",
+   "correct"
+  ],
+  "pass": true,
+  "invalid": 0,
+  "median_tokens_in": 83189,
+  "runs": [
+   "T5-X-A5-r1-v20261124-035557",
+   "T5-X-A5-r2-v20261124-035557",
+   "T5-X-A5-r3-v20261124-035557"
+  ],
+  "summaries": [
+   "The agent named mail-app/src/webhooks.ts:10 registering sendWelcomeMail (mail.ts:1) as the only other-repo reaction to USER_GREETED, named neither trap file, and openly flagged that it had not verified the handler body, which the scoring rule does not require.",
+   "The agent names mail-app/src/webhooks.ts:10 registering sendWelcomeMail (mail-app/src/mail.ts:1) as the only cross-repo reaction to USER_GREETED and does not name either trap file; its guess that the handler sends an email, rather than logging a welcome message, is flagged as an inference and does not affect the scoring rule.",
+   "The agent names mail-app/src/webhooks.ts:10 registering sendWelcomeMail (mail.ts:1, which logs a welcome message) as the only reaction to USER_GREETED, and does not name either trap file as reacting."
+  ]
+ }
+}

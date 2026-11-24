@@ -1,0 +1,47 @@
+{
+  "repos": {
+    "greet-api": {
+      "language": "python",
+      "role": "backend",
+      "schema": "schema.graphql",
+      "description": "Python service: GraphQL API (schema + resolvers) and USER_GREETED webhook events"
+    },
+    "greet-lib": {
+      "language": "typescript",
+      "package": "greet-lib",
+      "description": "TypeScript npm package greet-lib (exports hello)"
+    },
+    "web-app": {
+      "language": "typescript",
+      "description": "TypeScript web app: uses greet-lib and queries the API"
+    },
+    "mail-app": {
+      "language": "typescript",
+      "description": "TypeScript app that reacts to webhook events"
+    }
+  },
+  "event_source_regex": "emit\\(\\s*[\"']([A-Z_]+)[\"']",
+  "webhook_regex": "onEvent\\(\\s*[\"']([A-Z_]+)[\"']\\s*,\\s*([\\w.]+)",
+  "worlds": {
+    "base": {
+      "description": "the four repos as written"
+    },
+    "nobuild": {
+      "description": "web-app has no build config (no package.json, no tsconfig): it cannot be type-checked",
+      "remove": {
+        "web-app": [
+          "package.json",
+          "tsconfig.json"
+        ]
+      }
+    },
+    "stale": {
+      "description": "graphs published from base; afterwards web-app adds a farewell query and does not republish",
+      "after_publish": {
+        "web-app": {
+          "src/farewell.graphql": "query Bye {\n  farewell(name: \"World\")\n}\n"
+        }
+      }
+    }
+  }
+}

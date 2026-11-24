@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+"""One repo's CI job: build its artefacts and publish them to the world's registry.
+
+  bin/publish <world> <repo>
+
+Reads only worlds/<world>/repos/<repo>. Publishes worlds/<world>/registry/<repo>/<commit>-<time>/:
+  graph.json (syntax graph, Graphify)   l3.db (compiler index, SCIP)   contract.json (contract extract)
+Each artefact is published if its build succeeds (a failed build is recorded in manifest.json).
+Run through bin/sandbox (re-invokes itself inside it).
+"""
+import datetime
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+P = Path(__file__).resolve().parent.parent
+PY = str(P / "tools/.venv-store/bin/python")
+if os.environ.get("HOME", "") != str(P / ".sandbox/home") or sys.executable != PY:
+    os.execv(str(P / "bin/sandbox"), [str(P / "bin/sandbox"), "--", PY, *sys.argv])
+sys.path.insert(0, str(P / "graphs"))
+import contract_lib  # noqa: E402
+
+world, repo = sys.argv[1], sys.argv[2]
+ORG = json.loads((P / "org.json").read_text())
+SRC = P / "worlds" / world / "repos" / repo
+CI = P / ".sandbox/ci" / world / repo
+sha = subprocess.run(["git", "-C", str(SRC), "rev-parse", "--short", "HEAD"], stdout=subprocess.PIPE, text=True).stdout.strip()
+ver = f"{sha}-{datetime.datetime.now().strftime('%Y%m%dT%H%M%S%f')[:-3]}"
+OUT = P / "worlds" / world / "registry" / repo / ver
+OUT.mkdir(parents=True)
+if CI.exists():
+    shutil.rmtree(CI)
+CI.mkdir(parents=True)
+env = dict(os.environ, TMPDIR=str(CI))
+result = {}
+
+
+def step(name, fn):
+    t = time.time()
+    try:
+        fn(); ok = True; err = ""
+    except Exception as e:
+        ok = False; err = str(e)[-400:]
+    result[name] = {"ok": ok, "seconds": round(time.time() - t, 1), "error": err}
+    print(f"  {repo} {name}: {'ok' if ok else 'FAILED'} ({result[name]['seconds']}s){(' — ' + err) if err else ''}")
+
+
+def run(cmd, env=None):
+    out = subprocess.run(cmd, cwd=SRC, env=env or globals()["env"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    if out.returncode != 0:
+        raise RuntimeError(out.stdout[-400:])
+    return out.stdout
+
+
+def l2():
+    run([str(P / "tools/.venv/bin/graphify"), "update", ".", "--force"],
+        env=dict(env, GRAPHIFY_OUT=str(CI / "graphify-out"), GRAPHIFY_NO_TIPS="1"))
+    shutil.copy(CI / "graphify-out/graph.json", OUT / "graph.json")
+
+
+def l3():
+    idx = CI / "index.scip"
+    if ORG["repos"][repo]["language"] == "python":
+        run(["scip-python", "index", "--project-name", repo, "--project-version", sha, "--output", str(idx)])
+    else:
+        if not (SRC / "tsconfig.json").exists():
+            raise RuntimeError("no tsconfig.json: the project cannot be type-checked")
+        run(["scip-typescript", "index", "--output", str(idx)])
+    import scip_lib
+    scip_lib.to_db(idx, repo, OUT / "l3.db")
+
+
+def l4():
+    (OUT / "contract.json").write_text(json.dumps(contract_lib.extract(SRC, repo, ORG)))
+
+
+print(f"publish {world}/{repo} @ {sha}")
+step("l2", l2); step("l3", l3); step("l4", l4)
+(OUT / "manifest.json").write_text(json.dumps({"repo": repo, "commit": sha, "version": ver,
+                                               "published": datetime.datetime.now().isoformat(timespec="seconds"),
+                                               "steps": result}, indent=1))
+(OUT.parent / "LATEST").write_text(ver + "\n")
+print(f"published {repo} {ver}")

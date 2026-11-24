@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# Run a command in the experiment's clean, contained environment (plan section 2.1).
+#
+#   bin/sandbox [--secrets] [-e KEY=VALUE]... [--] <command> [args...]
+#
+# Starts from an empty environment (env -i) and sets only an allowlist, so nothing
+# leaks in from the shell or the operator's own Claude Code session. HOME, temp,
+# runtime and cache folders all point inside <project>/.sandbox/.
+#   --secrets      also load the Claude Code credential, kept OUTSIDE the project:
+#                  ~/.config/claude/temp_creds/knowledge-graphs-toy.env (override: KG_SECRETS_FILE)
+#   -e KEY=VALUE   add or override one variable (used by bin/run-question for
+#                  per-run HOME, XDG_* and CLAUDE_CONFIG_DIR)
+set -euo pipefail
+
+P="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+S="$P/.sandbox"
+
+with_secrets=false
+extra=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --secrets) with_secrets=true; shift ;;
+    -e) extra+=("$2"); shift 2 ;;
+    --) shift; break ;;
+    *) break ;;
+  esac
+done
+[ $# -gt 0 ] || { echo "usage: bin/sandbox [--secrets] [-e KEY=VALUE]... <command> [args...]" >&2; exit 2; }
+
+mkdir -p "$S"/{home,tmp,run,pip-cache} "$S"/xdg/{cache,config,data,state} \
+         "$S"/uv/{cache,tools,python} "$S"/node/{npm-cache,store,corepack,pnpm-home} \
+         "$S"/claude/default
+chmod 700 "$S" "$S/run"
+
+vars=(
+  "HOME=$S/home"
+  "TMPDIR=$S/tmp"
+  "CLAUDE_CODE_TMPDIR=$S/tmp"
+  "XDG_RUNTIME_DIR=$S/run"
+  "XDG_CACHE_HOME=$S/xdg/cache"
+  "XDG_CONFIG_HOME=$S/xdg/config"
+  "XDG_DATA_HOME=$S/xdg/data"
+  "XDG_STATE_HOME=$S/xdg/state"
+  "UV_CACHE_DIR=$S/uv/cache"
+  "UV_TOOL_DIR=$S/uv/tools"
+  "UV_PYTHON_INSTALL_DIR=$S/uv/python"
+  "PIP_CACHE_DIR=$S/pip-cache"
+  "npm_config_cache=$S/node/npm-cache"
+  "npm_config_store_dir=$S/node/store"
+  "npm_config_update_notifier=false"
+  "COREPACK_HOME=$S/node/corepack"
+  "COREPACK_ENABLE_DOWNLOAD_PROMPT=0"
+  "PNPM_HOME=$S/node/pnpm-home"
+  "CLAUDE_CONFIG_DIR=$S/claude/default"
+  "DISABLE_AUTOUPDATER=1"
+  "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1"
+  "CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL=1"
+  "CLAUDE_CODE_DISABLE_AUTO_MEMORY=1"
+  "PATH=$P/tools/bin:$P/tools/node_modules/.bin:$P/tools/.venv/bin:/usr/bin:/bin"
+  "LANG=${LANG:-C.UTF-8}"
+  "TERM=${TERM:-xterm-256color}"
+)
+
+if $with_secrets; then
+  # the real home of the user, even if HOME was pointed elsewhere
+  REAL_HOME="$(getent passwd "$(id -un)" | cut -d: -f6)"
+  SECRETS="${KG_SECRETS_FILE:-$REAL_HOME/.config/claude/temp_creds/knowledge-graphs-toy.env}"
+  [ -f "$SECRETS" ] || { echo "missing credential file $SECRETS" >&2; exit 1; }
+  while IFS= read -r line; do
+    case "$line" in
+      ''|'#'*) ;;
+      CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-*) vars+=("$line") ;;
+      *) echo "credential file: only CLAUDE_CODE_OAUTH_TOKEN (the subscription token) is allowed; ignoring '${line%%=*}'" >&2 ;;
+    esac
+  done < "$SECRETS"
+fi
+
+# Subscription only: an API key must never reach Claude Code, so no run can be billed to an API account.
+for kv in "${extra[@]}"; do
+  case "$kv" in ANTHROPIC_API_KEY=*|ANTHROPIC_AUTH_TOKEN=*|CLAUDE_CODE_USE_BEDROCK=*|CLAUDE_CODE_USE_VERTEX=*|ANTHROPIC_BASE_URL=*)
+    echo "bin/sandbox: refusing ${kv%%=*} — this project runs on the Claude subscription only" >&2; exit 1 ;;
+  esac
+done
+exec env -i "${vars[@]}" "${extra[@]}" "$@"

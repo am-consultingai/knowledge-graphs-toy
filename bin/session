@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+"""Open a live, interactive Claude Code session in one configuration.
+
+  bin/session <configuration> <scenario> [--no-ask] [--model claude-haiku-5-5] [--store-mode central|federated]
+  bin/session <configuration> --world base --workspace greet-lib      (free exploration, no scenario)
+  bin/session list                                                    (configurations and scenarios)
+
+The session starts inside the scenario's workspace repo, in the scenario's world, with the
+configuration's tools (and the scenario's read limit). The scenario's question is sent as the first
+message, exactly as bin/run-question sends it; with --no-ask it is only printed, for you to paste.
+The configuration's CLAUDE.md (the instructions the session is given) is printed before it starts.
+On exit the transcript is saved to results/sessions/<session-id>/ (credential removed).
+"""
+import argparse
+import os
+import pwd
+import datetime
+import hashlib
+import json
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+P = Path(__file__).resolve().parent.parent
+# the Claude Code credential lives outside the project (see bin/sandbox); used here only to redact logs
+SECRETS = Path(os.environ.get("KG_SECRETS_FILE") or
+               Path(pwd.getpwuid(os.getuid()).pw_dir) / ".config/claude/temp_creds/knowledge-graphs-toy.env")
+if len(sys.argv) > 1 and sys.argv[1] == "list":
+    for d in sorted((P / "conditions").iterdir()):
+        print(f"  {d.name:<6} {json.loads((d / 'profile.json').read_text())['description']}")
+    print()
+    for f in sorted((P / "scenarios").glob("*.json")):
+        s = json.loads(f.read_text()); print(f"  {s['id']:<4} {s['title']}  (world {s['world']}, from {s['workspace']})")
+    sys.exit(0)
+ap = argparse.ArgumentParser()
+ap.add_argument("config"); ap.add_argument("scenario", nargs="?")
+ap.add_argument("--world"); ap.add_argument("--workspace")
+ap.add_argument("--no-ask", action="store_true", help="don't send the question; only print it")
+ap.add_argument("--theme", default="auto", help="Claude Code theme: auto, dark, light, ... (default auto)")
+ap.add_argument("--model", default="claude-haiku-5-5"); ap.add_argument("--store-mode", default="central")
+a = ap.parse_args()
+sc = json.loads((P / "scenarios" / f"{a.scenario}.json").read_text()) if a.scenario else {}
+world, ws = a.world or sc.get("world"), a.workspace or sc.get("workspace")
+if not world or not ws:
+    sys.exit("give a scenario, or --world and --workspace")
+prof = json.loads((P / "conditions" / a.config / "profile.json").read_text())
+W = P / "worlds" / world
+sid = f"{a.config}-{a.scenario or ws}-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
+sd = P / ".sandbox/sessions" / sid
+for sub in ("home", "tmp", "xdg/cache", "xdg/config", "xdg/data", "xdg/state"):
+    (sd / sub).mkdir(parents=True, exist_ok=True)
+rt = P / ".sandbox/r" / hashlib.sha1(sid.encode()).hexdigest()[:8]; rt.mkdir(parents=True, exist_ok=True); rt.chmod(0o700)
+shutil.copytree(P / "conditions" / a.config, sd / "config"); (sd / "config/profile.json").unlink()
+md = sd / "config/CLAUDE.md"; md.write_text(md.read_text().replace("{{WORKSPACE}}", ws))
+# Pre-answer Claude Code's first-run questions in this session's fresh config: onboarding (theme picker) and
+# trust for the start folder. Theme "auto" follows the terminal; set it with --theme.
+st = json.loads((sd / "config/settings.json").read_text()); st["theme"] = a.theme
+# Show this session's configuration inside the session: a SessionStart hook whose systemMessage is displayed to
+# the user only (it is not added to the model's context, so the model sees the same input as bin/run-question).
+TOOLS = {"search": ["search_code"], "read": ["read_file"], "l2": ["graph_explain", "graph_callers", "graph_path"],
+         "l3": ["scip_symbols", "scip_references"],
+         "l4": ["contract_field_consumers", "contract_operation", "contract_event_subscribers", "contract_event_sources"]}
+LAYER = {"search": "code search", "read": "open files", "l2": "syntax graph", "l3": "compiler index (SCIP)",
+         "l4": "contract graph"}
+layers = [l for l in prof["mcp_layers"].split(",") if l]
+info = [f"Session configuration — {sid}",
+        f"  Configuration : {a.config} — {prof['description']}",
+        f"  Model         : {a.model}",
+        f"  World         : {world}   ·   starts in repo {ws}   ·   graph store {a.store_mode}",
+        f"  Read limit    : {sc.get('read_limit') or 'none'}"]
+if sc:
+    info.append(f"  Scenario      : {sc['id']} — {sc['title']}")
+info.append("  org MCP tools :" + ("" if layers else " none (own repo only)"))
+info += [f"    {LAYER[l]:<22} {', '.join(TOOLS[l])}" for l in layers]
+(sd / "session-info.json").write_text(json.dumps({"systemMessage": "\n".join(info)}))
+st["hooks"] = {"SessionStart": [{"matcher": "startup", "hooks": [
+    {"type": "command", "command": f"cat '{sd / 'session-info.json'}'"}]}]}
+(sd / "config/settings.json").write_text(json.dumps(st, indent=2) + "\n")
+(sd / "config/.claude.json").write_text(json.dumps({
+    "hasCompletedOnboarding": True,
+    "projects": {str(W / "repos" / ws): {"hasTrustDialogAccepted": True}}}, indent=2) + "\n")
+extra = []
+if prof["mcp_layers"]:
+    (sd / "mcp.json").write_text(json.dumps({"mcpServers": {"org": {
+        "command": str(P / "tools/.venv-store/bin/python"), "args": [str(P / "graphs/server.py")],
+        "env": {"WORLD": str(W), "STORE_LAYERS": prof["mcp_layers"], "STORE_MODE": a.store_mode,
+                "READ_LIMIT": str(sc.get("read_limit", 0)), "STORE_LOG": str(sd / "store-calls.jsonl"), "TMPDIR": str(sd / "tmp")}}}}))
+    extra = ["--mcp-config", str(sd / "mcp.json")]
+env_args = []
+for k, v in {"HOME": sd / "home", "TMPDIR": sd / "tmp", "CLAUDE_CODE_TMPDIR": sd / "tmp", "XDG_RUNTIME_DIR": rt,
+             "XDG_CACHE_HOME": sd / "xdg/cache", "XDG_CONFIG_HOME": sd / "xdg/config", "XDG_DATA_HOME": sd / "xdg/data",
+             "XDG_STATE_HOME": sd / "xdg/state", "CLAUDE_CONFIG_DIR": sd / "config", "ENABLE_CLAUDEAI_MCP_SERVERS": "false",
+             "CLAUDE_CODE_SYNC_SKILLS": "0", "COLORTERM": "truecolor"}.items():
+    env_args += ["-e", f"{k}={v}"]
+print("─" * 70)
+print(f" Session    {sid}")
+print(f" Config     {a.config} — {prof['description']}")
+print(f" World      {world}   ·   starts in repo {ws}   ·   store {a.store_mode}"
+      + (f"   ·   read limit {sc['read_limit']}" if sc.get("read_limit") else ""))
+print(f"\n Instructions given to the session (CLAUDE.md):")
+for line in md.read_text().strip().splitlines():
+    print(f"   {line}")
+ask = []
+if sc:
+    print(f"\n Scenario   {sc['id']} — {sc['title']}")
+    if a.no_ask:
+        print(f"\n Question to paste:\n   {sc['question']}")
+    else:
+        print(f"\n Question (sent as the first message):\n   {sc['question']}")
+        ask = [sc["question"]]
+print("─" * 70)
+subprocess.run([str(P / "bin/sandbox"), "--secrets", *env_args, "--", str(P / "tools/bin/claude"), *ask,
+                "--model", a.model, "--effort", "high", "--setting-sources", "user", "--strict-mcp-config",
+                "--permission-mode", "default", "--name", sid, *extra], cwd=W / "repos" / ws)
+out = P / "results/sessions" / sid; out.mkdir(parents=True, exist_ok=True)
+secret = [l.split("=", 1)[1] for l in SECRETS.read_text().splitlines() if "=" in l]
+for i, t in enumerate(sorted((sd / "config/projects").rglob("*.jsonl")) if (sd / "config/projects").exists() else [], 1):
+    text = t.read_text()
+    for s in secret:
+        text = text.replace(s, "[REDACTED]")
+    (out / f"transcript-{i}.jsonl").write_text(text)
+if (sd / "store-calls.jsonl").exists():
+    shutil.copy(sd / "store-calls.jsonl", out / "store-calls.jsonl")
+print(f"Saved to results/sessions/{sid}/")

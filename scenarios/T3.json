@@ -1,0 +1,60 @@
+{
+ "id": "T3",
+ "title": "Identity: which hello?",
+ "world": "base",
+ "workspace": "greet-lib",
+ "question": "This repository is the npm package greet-lib. Which code in the other repositories uses our hello function (src/index.ts)? List every use as repo/file:line.",
+ "answer_key": "Exactly one file uses greet-lib's hello: web-app/src/main.ts \u2014 line 1 imports hello from \"greet-lib\", line 5 calls it inside run().\nTraps: web-app/src/footer.ts, logout.ts and local.ts also import from greet-lib but use only goodbye; web-app/src/local.ts also defines its OWN function hello, never used.\nScoring: correct = gives web-app/src/main.ts lines 1 and 5 AND states that it is the only use (the other importers do not use hello). partial = gives main.ts but leaves other importers as possible or unverified uses. wrong = lists a trap file as a use, or finds nothing.",
+ "expected": {
+  "X-A0": "wrong",
+  "X-A1": "correct",
+  "X-G2": "wrong",
+  "X-G3": "correct",
+  "X-G4": "wrong",
+  "X-A5": "correct"
+ },
+ "lesson": "Identity needs the compiler: the syntax graph only knows that 4 files import the package; with one file allowed to open (standing in for scale), it can't tell which uses hello.",
+ "tool_checks": [
+  {
+   "layer": "l2",
+   "call": "graph_callers",
+   "args": [
+    "hello"
+   ],
+   "absent": [
+    "main.ts"
+   ]
+  },
+  {
+   "layer": "l2",
+   "call": "graph_explain",
+   "args": [
+    "greet-lib"
+   ],
+   "contains": [
+    "main.ts",
+    "footer.ts",
+    "logout.ts",
+    "local.ts"
+   ]
+  },
+  {
+   "layer": "l3",
+   "call": "scip_references",
+   "args": [
+    "scip-typescript npm greet-lib 1.0.0 src/`index.ts`/hello()."
+   ],
+   "contains": [
+    "web-app/src/main.ts:5",
+    "web-app/src/main.ts:1"
+   ],
+   "absent": [
+    "local.ts",
+    "footer.ts",
+    "logout.ts"
+   ]
+  }
+ ],
+ "read_limit": 1,
+ "plain": "The library team asks: which code in other repos uses our hello()? (Four web-app files import the library; one uses hello; web-app also has its own hello.)"
+}

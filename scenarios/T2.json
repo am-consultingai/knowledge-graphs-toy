@@ -1,0 +1,40 @@
+{
+ "id": "T2",
+ "title": "Structure, when the repo can't be built",
+ "world": "nobuild",
+ "workspace": "greet-api",
+ "question": "In the web-app repository, what does the function run() (in src/main.ts) call? For each call, say where the called function is defined.",
+ "answer_key": "Same as T1: run() (web-app/src/main.ts line 4) calls render (web-app/src/render.ts line 1) and hello (npm package greet-lib, greet-lib repo src/index.ts line 1).\nIn this world web-app has no package.json or tsconfig, so it has no compiler index.\nScoring: both calls with definitions = correct; one = partial; none = wrong.",
+ "expected": {
+  "X-A0": "wrong",
+  "X-A1": "correct",
+  "X-G2": "correct",
+  "X-G3": "wrong",
+  "X-G4": "wrong",
+  "X-A5": "correct"
+ },
+ "lesson": "The syntax graph works on code that can't be built; the compiler index has nothing for it.",
+ "tool_checks": [
+  {
+   "layer": "l2",
+   "call": "graph_explain",
+   "args": [
+    "run"
+   ],
+   "contains": [
+    "render"
+   ]
+  },
+  {
+   "layer": "l3",
+   "call": "scip_symbols",
+   "args": [
+    "run"
+   ],
+   "contains": [
+    "no symbols"
+   ]
+  }
+ ],
+ "plain": "Same question, but the web app can't be built (no build config), so it can't be compiled."
+}

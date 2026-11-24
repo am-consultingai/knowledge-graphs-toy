@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Publish the deck: split presentation/ into the `presentation` branch (its files at the branch root) and push it.
+# GitHub Pages serves that branch. Commit your changes to presentation/ on main first.
+#
+#   bin/deploy-deck
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+if ! git diff --quiet -- presentation || ! git diff --cached --quiet -- presentation; then
+  echo "presentation/ has uncommitted changes: commit them first" >&2; exit 1
+fi
+sha="$(git subtree split --prefix=presentation)"   # deterministic, so each deploy fast-forwards the branch
+git branch -f presentation "$sha"
+git push origin "$sha:refs/heads/presentation"
+echo "deployed $sha to branch presentation"

@@ -1,0 +1,51 @@
+{
+ "id": "T4",
+ "title": "Interface: an API field",
+ "world": "base",
+ "workspace": "greet-api",
+ "question": "We (this repository, the backend) plan to remove the field greeting from the Query type in schema.graphql. What code in the other repositories would break? List repo/file:line, and say which repositories are unaffected.",
+ "answer_key": "web-app breaks: web-app/src/queries.graphql line 2 selects greeting in query Greet.\ngreet-lib and mail-app are unaffected.\nScoring: names web-app/src/queries.graphql (line 2, \u00b11) and calls greet-lib and mail-app unaffected = correct; web-app named without the file = partial; otherwise wrong.",
+ "expected": {
+  "X-A0": "wrong",
+  "X-A1": "correct",
+  "X-G2": "wrong",
+  "X-G3": "wrong",
+  "X-G4": "correct",
+  "X-A5": "correct"
+ },
+ "lesson": "Only the contract graph links a Python API to the clients that query it.",
+ "tool_checks": [
+  {
+   "layer": "l4",
+   "call": "contract_field_consumers",
+   "args": [
+    "Query",
+    "greeting"
+   ],
+   "contains": [
+    "web-app/src/queries.graphql:2"
+   ]
+  },
+  {
+   "layer": "l2",
+   "call": "graph_explain",
+   "args": [
+    "greeting"
+   ],
+   "absent": [
+    "queries.graphql"
+   ]
+  },
+  {
+   "layer": "l3",
+   "call": "scip_symbols",
+   "args": [
+    "greeting"
+   ],
+   "absent": [
+    "web-app"
+   ]
+  }
+ ],
+ "plain": "The API team wants to delete the greeting field. Which client code would break?"
+}

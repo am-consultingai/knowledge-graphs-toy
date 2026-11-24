@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""Build every world from toy-src/ (or the ones named): repos as local git repos, greet-lib packed and
+installed into web-app, every repo published, the central store linked, then post-publish changes.
+
+  bin/setup [world ...]
+"""
+import json
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+P = Path(__file__).resolve().parent.parent
+if os.environ.get("HOME", "") != str(P / ".sandbox/home"):
+    os.execv(str(P / "bin/sandbox"), [str(P / "bin/sandbox"), "--", sys.executable, *sys.argv])
+ORG = json.loads((P / "org.json").read_text())
+GIT = {"GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1"}
+
+
+def sh(cmd, cwd, **env):
+    out = subprocess.run(cmd, cwd=cwd, env=dict(os.environ, **GIT, **env), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    if out.returncode != 0:
+        sys.exit(f"FAILED in {cwd}: {' '.join(cmd)}\n{out.stdout[-800:]}")
+    return out.stdout
+
+
+def commit(repo_dir, msg):
+    sh(["git", "add", "-A"], repo_dir)
+    sh(["git", "-c", "user.name=Toy team", "-c", "user.email=team@example.invalid", "commit", "-q", "-m", msg], repo_dir)
+
+
+for world in (sys.argv[1:] or list(ORG["worlds"])):
+    spec = ORG["worlds"][world]
+    W = P / "worlds" / world
+    if W.exists():
+        shutil.rmtree(W)
+    (W / "repos").mkdir(parents=True); (W / "npm").mkdir()
+    print(f"== world {world}: {spec['description']}")
+    for repo in ORG["repos"]:
+        d = W / "repos" / repo
+        shutil.copytree(P / "toy-src" / repo, d)
+        for f in spec.get("remove", {}).get(repo, []):
+            (d / f).unlink()
+        sh(["git", "init", "-q", "-b", "main"], d)
+        commit(d, "Initial version")
+    # greet-lib is built and packed like a published npm package; consumers install the tarball
+    lib = W / "repos/greet-lib"
+    sh([str(P / "tools/node_modules/.bin/tsc"), "-p", "."], lib)
+    sh(["npm", "pack", "--pack-destination", str(W / "npm")], lib)
+    tarball = next((W / "npm").glob("greet-lib-*.tgz"))
+    app = W / "repos/web-app"
+    if (app / "package.json").exists():
+        sh(["npm", "install", "--no-save", "--no-package-lock", "--ignore-scripts", str(tarball)], app)
+    for repo in ORG["repos"]:
+        print(sh([str(P / "bin/publish"), world, repo], P).strip())
+    print(sh([str(P / "bin/store-sync"), world], P).strip())
+    for repo, files in spec.get("after_publish", {}).items():
+        d = W / "repos" / repo
+        for rel, text in files.items():
+            (d / rel).parent.mkdir(parents=True, exist_ok=True); (d / rel).write_text(text)
+        commit(d, "Change after the graphs were published")
+        print(f"  {repo}: committed a change after publishing (not republished)")
+print("setup done")
