@@ -89,6 +89,10 @@ svg .mono{font-family:var(--mono)}
 .open h1{font-size:100px;line-height:1.02;letter-spacing:-.035em;max-width:1150px}
 .open .subt{font-family:var(--display);font-size:44px;font-weight:500;color:var(--s2);margin-top:26px;max-width:1000px;line-height:1.25}
 .open .meta{font-size:30px;color:var(--s3);margin-top:36px;padding-top:24px;border-top:1px solid var(--line);max-width:1000px}
+.repo{display:inline-flex;align-items:center;gap:14px;color:var(--s2);text-decoration:none;border-bottom:2px solid var(--line);padding-bottom:4px}
+.repo:hover{color:var(--ink);border-bottom-color:currentColor}
+.repo svg{width:1em;height:1em;flex:none}
+.open .meta .repo{font-size:26px;margin-top:14px}
 .open .body{flex:none;margin:0;justify-content:flex-start}
 .open .spacer{flex:1}
 .cover-net{position:absolute;right:-60px;top:170px;width:700px;height:700px;opacity:.9}
@@ -234,6 +238,7 @@ svg .note.miss{fill:var(--red);font-weight:700}
 <!-- icon set: one symbol per graph, used everywhere -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
+    <symbol id="i-gh" viewBox="0 0 16 16"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></symbol>
     <symbol id="i-syn" viewBox="0 0 64 64"><g fill="none" stroke="#818cf8" stroke-width="4" stroke-linecap="round">
       <path d="M32 14 L16 32 M32 14 L48 32 M16 32 L9 50 M16 32 L23 50 M48 32 L41 50 M48 32 L55 50"/></g>
       <g fill="#818cf8"><circle cx="32" cy="12" r="6"/><circle cx="16" cy="32" r="5"/><circle cx="48" cy="32" r="5"/>
@@ -275,7 +280,8 @@ svg .note.miss{fill:var(--red);font-weight:700}
       <span class="gtag cmp"><svg><use href="#i-cmp"/></svg>Compiler index</span>
       <span class="gtag con"><svg><use href="#i-con"/></svg>Contract graph</span>
     </div>
-    <div class="meta" data-a style="--i:4">Avishay Meron · AM Consulting</div>
+    <div class="meta" data-a style="--i:4">Avishay Meron · AM Consulting<br>
+      <a class="repo" href="https://github.com/am-consultingai/knowledge-graphs-toy" target="_blank" rel="noopener"><svg><use href="#i-gh"/></svg>github.com/am-consultingai/knowledge-graphs-toy</a></div>
   </div>
   <div class="spacer"></div>
   <footer class="q"><span class="qm">?</span><q>What will we cover?</q></footer>
@@ -658,7 +664,8 @@ svg .note.miss{fill:var(--red);font-weight:700}
       <div class="qq" data-a="left" style="--i:10"><small>freshness</small>Is it still true?</div><div class="ar" data-a style="--i:11">→</div>
       <div class="gg trap" data-a="right" style="--i:12"><svg style="color:var(--trap)"><use href="#i-clock"/></svg>Republish, or search live</div>
     </div>
-    <div data-a style="--i:13"><span class="cta">▶ Let's run it</span></div>
+    <div data-a style="--i:13;display:flex;align-items:center;gap:48px"><span class="cta">▶ Let's run it</span>
+      <a class="repo" style="font-size:30px" href="https://github.com/am-consultingai/knowledge-graphs-toy" target="_blank" rel="noopener"><svg><use href="#i-gh"/></svg>github.com/am-consultingai/knowledge-graphs-toy</a></div>
   </div>
   <footer class="q"><span class="qm">?</span><q>Questions before we run the 3x3 live?</q></footer>
 </section>
