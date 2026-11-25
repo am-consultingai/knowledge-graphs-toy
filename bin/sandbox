@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run a command in the experiment's clean, contained environment (plan section 2.1).
+# Run a command in the experiment's clean, contained environment.
 #
 #   bin/sandbox [--secrets] [-e KEY=VALUE]... [--] <command> [args...]
 #

@@ -21,7 +21,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # macOS users run Apple's bash 3.2; make every script use it, not the runner's newer Homebrew bash.
       - name: Use the system bash (macOS)
@@ -32,7 +32,7 @@ jobs:
           echo "$RUNNER_TEMP/bash32" >> "$GITHUB_PATH"
 
       - name: Cache tool downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: tools/.downloads
           key: downloads-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/versions.env') }}

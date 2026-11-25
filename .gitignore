@@ -32,3 +32,6 @@ __pycache__/
 
 # Live-session transcripts (personal exploration, raw model context)
 results/sessions/
+
+# Local, personal documents (e.g. workshop follow-up emails); never committed
+local-docs/

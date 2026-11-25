@@ -76,6 +76,7 @@ if $CLEAN; then
   targets=()
   for rel in tools/bin tools/node tools/python tools/.pkg tools/.downloads tools/node_modules tools/claude-code/node_modules \
              tools/.venv tools/.venv-store worlds .sandbox results/raw results/sessions \
+             bin/__pycache__ graphs/__pycache__ harness/__pycache__ \
              conditions/X-A0/settings.json conditions/X-A1/settings.json conditions/X-A5/settings.json \
              conditions/X-G2/settings.json conditions/X-G3/settings.json conditions/X-G4/settings.json; do
     if [ -e "$P/$rel" ] || [ -L "$P/$rel" ]; then targets+=("$P/$rel"); fi

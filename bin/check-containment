@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Containment check for the knowledge-graph experiment (plan section 2.3).
+"""Containment check: proves the experiment wrote nothing outside the project folder.
 
 Usage:
   check-containment snapshot <name>          record a snapshot of the watched areas
@@ -43,7 +43,7 @@ ROOTS = _roots()
 STORE = PROJECT / ".sandbox" / "containment"
 OPERATOR = STORE / "operator-paths.txt"
 CLAUDE_JSON = HOME / ".claude.json"
-SUSPECT_SUBSTRINGS = ["/knowledge-graphs/repos", "/knowledge-graphs/.sandbox"]
+SUSPECT_SUBSTRINGS = [str(PROJECT / "worlds"), str(PROJECT / ".sandbox")]  # a Claude project key in here = leak
 
 
 def _walk(roots: list) -> list:
