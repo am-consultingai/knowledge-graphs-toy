@@ -6,8 +6,9 @@ Usage:
   check-containment compare <before> <after> report differences, minus known operator paths
   check-containment noise <before> <after>   write every changed path to operator-paths.txt
 
-Watched: the real home directory (minus the project), /tmp, /var/tmp, /dev/shm,
-/run/user/<uid>. Each file is recorded with size, mtime and inode, so new, changed
+Watched: the real home directory (minus the project) and the system temp folders that exist
+(Linux: /tmp, /var/tmp, /dev/shm, /run/user/<uid>; macOS: /private/tmp, /private/var/tmp and the
+per-user temp and cache folders under /var/folders). Each file is recorded with size, mtime and inode, so new, changed
 and deleted files are all caught. ~/.claude.json is compared by its JSON keys.
 
 This script only writes inside <project>/.sandbox/containment/.
@@ -20,22 +21,65 @@ import sys
 from pathlib import Path
 
 PROJECT = Path(__file__).resolve().parent.parent
-HOME = Path("/home/am")  # the real home, not the sandbox one
+import pwd  # noqa: E402
+
+HOME = Path(pwd.getpwuid(os.getuid()).pw_dir)  # the real home, not the sandbox one
 UID = os.getuid()
-ROOTS = [str(HOME), "/tmp", "/var/tmp", "/dev/shm", f"/run/user/{UID}"]
+
+
+def _roots() -> list:
+    if sys.platform == "darwin":
+        extra = ["/private/tmp", "/private/var/tmp"]
+        for key in ("DARWIN_USER_TEMP_DIR", "DARWIN_USER_CACHE_DIR"):
+            out = subprocess.run(["getconf", key], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+            if out.returncode == 0 and out.stdout.strip():
+                extra.append(out.stdout.strip().rstrip("/"))
+    else:
+        extra = ["/tmp", "/var/tmp", "/dev/shm", f"/run/user/{UID}"]
+    return [str(HOME)] + [r for r in extra if os.path.isdir(r)]
+
+
+ROOTS = _roots()
 STORE = PROJECT / ".sandbox" / "containment"
 OPERATOR = STORE / "operator-paths.txt"
 CLAUDE_JSON = HOME / ".claude.json"
 SUSPECT_SUBSTRINGS = ["/knowledge-graphs/repos", "/knowledge-graphs/.sandbox"]
 
 
+def _walk(roots: list) -> list:
+    """Every entry under the roots as 'path<TAB>size<TAB>mtime<TAB>inode', not crossing file systems
+    (like find -xdev) and skipping the project. Pure Python so it works with BSD (macOS) and GNU tools."""
+    out, skip = [], str(PROJECT)
+
+    def rec(path, dev):
+        try:
+            st = os.lstat(path)
+        except OSError:
+            return
+        out.append(f"{path}\t{st.st_size}\t{st.st_mtime:.10f}\t{st.st_ino}")
+        if not os.path.isdir(path) or os.path.islink(path) or st.st_dev != dev:
+            return
+        try:
+            names = os.listdir(path)
+        except OSError:
+            return
+        for n in names:
+            child = os.path.join(path, n)
+            if child != skip:
+                rec(child, dev)
+
+    for r in roots:
+        try:
+            rec(r, os.lstat(r).st_dev)
+        except OSError:
+            pass
+    return out
+
+
 def snapshot(name: str) -> None:
     STORE.mkdir(parents=True, exist_ok=True)
     out = STORE / f"{name}.lst.gz"
-    cmd = ["find", *ROOTS, "-xdev", "-path", str(PROJECT), "-prune", "-o",
-           "-printf", r"%p\t%s\t%T@\t%i\n"]
-    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-    lines = sorted(proc.stdout.decode("utf-8", "surrogateescape").splitlines())
+    lines = sorted(_walk(ROOTS))
     with gzip.open(out, "wt", encoding="utf-8", errors="surrogateescape") as f:
         f.write("\n".join(lines) + "\n")
     keys = {}

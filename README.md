@@ -6,6 +6,23 @@ The core demo is a **3x3**: three scenarios (T2, T3, T4), each won by exactly on
 Scenarios, answers and the latest results: **[SCENARIOS.md](SCENARIOS.md)**. Rules for working on this
 project (also for a new Claude session): **[CLAUDE.md](CLAUDE.md)**.
 
+## Quick start
+
+macOS or Linux (on Windows: WSL). You need git, curl and tar (macOS: `xcode-select --install`) and a Claude
+Pro or Max subscription. Nothing is installed outside this folder.
+
+    git clone https://github.com/am-consultingai/knowledge-graphs-toy.git
+    cd knowledge-graphs-toy
+    ./setup.sh                      # tools, Claude sign-in, build, checks (a few minutes), then opens core-3x3.html
+
+`core-3x3.html` is the helper page: what the experiment is, how it is isolated from your own setup, and the two ways
+to run it, either end to end (`bin/verify --core` for the 3x3, `bin/verify` for every combination, graded
+automatically) or interactively (`bin/session X-G3 T3`: one live Claude session per cell, its command ready to copy).
+
+`./setup.sh --check` shows what is installed or missing; re-running `./setup.sh` only redoes what is missing.
+`./setup.sh --clean` removes everything the experiment created, including its Claude token; then delete the folder,
+and revoke the token at <https://claude.ai/settings/claude-code> (`--clean` prints which one, by date).
+
 ## The three graphs
 
 | Graph | Built by | Knows | Can't |
@@ -50,6 +67,8 @@ opened (T3: 1 — standing in for "too many candidate files to open at scale").
 
 ## Commands
 
+    ./setup.sh [--check]            fresh clone: install tools, sign in, build, check (re-run safe)
+    ./setup.sh --clean              remove tools, worlds, sandbox, run logs and the Claude token
     bin/setup                       build all worlds (repos, packages, per-repo publish, central link)   ~25 s
     bin/check                       level 1: graph tools called directly, both store modes → PASS/FAIL (no model)
     bin/verify --core               level 2, the core 3x3: T2 T3 T4 x syntax / SCIP / contract (27 Haiku runs)
@@ -70,10 +89,18 @@ slide in its final state.
 
 ## Setup notes
 
-Not in git: `tools/` binaries and dependencies (Claude Code, `scip`, node_modules, Python venvs), the generated
-`worlds/`, raw run logs and the `.sandbox/` runtime. The Claude subscription token is kept outside the project, in
-`~/.config/claude/temp_creds/knowledge-graphs-toy.env` (a single `CLAUDE_CODE_OAUTH_TOKEN=` line; override the path with
-`KG_SECRETS_FILE`).
+`./setup.sh` installs everything into `tools/` at the versions pinned in git: Node, uv (which installs Python into
+`tools/python/`), ripgrep and scip from `tools/versions.env` (with checksums); the SCIP indexers and TypeScript from
+`tools/package-lock.json`; Claude Code from `tools/claude-code/package-lock.json`; the two venvs from
+`tools/requirements-*.txt`. To change a version, edit those files and re-run `./setup.sh`. Downloads, installed tools, the
+generated `worlds/` and `conditions/*/settings.json` (they hold this clone's path), raw run logs and the `.sandbox/`
+runtime are not in git.
+
+Sign-in: `./setup.sh` runs `claude setup-token` (a browser sign-in), asks you to paste the token it prints, saves it
+outside the project in `~/.config/claude/temp_creds/knowledge-graphs-toy.env` (a single `CLAUDE_CODE_OAUTH_TOKEN=` line,
+readable only by you; override the path with `KG_SECRETS_FILE`) and tests it with one Haiku call. To sign in again,
+delete that file and re-run `./setup.sh`. An `ANTHROPIC_API_KEY` in your shell is never passed on.
 
 Everything stays in this folder and runs on the Claude subscription. Results: `results/verify-*.md`,
-live sessions in `results/sessions/`, raw logs in `results/raw/`.
+live sessions in `results/sessions/`, raw logs in `results/raw/`. `.github/workflows/setup.yml` runs `./setup.sh` and
+`bin/check` on Linux and macOS (Apple silicon and Intel) on every push, with no token and no model calls.

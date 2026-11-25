@@ -56,14 +56,15 @@ vars=(
   "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1"
   "CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL=1"
   "CLAUDE_CODE_DISABLE_AUTO_MEMORY=1"
-  "PATH=$P/tools/bin:$P/tools/node_modules/.bin:$P/tools/.venv/bin:/usr/bin:/bin"
+  "PATH=$P/tools/bin:$P/tools/node_modules/.bin:$P/tools/.venv/bin:/usr/bin:/bin:/usr/sbin:/sbin"
   "LANG=${LANG:-C.UTF-8}"
   "TERM=${TERM:-xterm-256color}"
 )
 
 if $with_secrets; then
   # the real home of the user, even if HOME was pointed elsewhere
-  REAL_HOME="$(getent passwd "$(id -un)" | cut -d: -f6)"
+  # (works on Linux and macOS, which has no getent)
+  REAL_HOME="$(eval echo "~$(id -un)")"
   SECRETS="${KG_SECRETS_FILE:-$REAL_HOME/.config/claude/temp_creds/knowledge-graphs-toy.env}"
   [ -f "$SECRETS" ] || { echo "missing credential file $SECRETS" >&2; exit 1; }
   while IFS= read -r line; do
@@ -76,9 +77,9 @@ if $with_secrets; then
 fi
 
 # Subscription only: an API key must never reach Claude Code, so no run can be billed to an API account.
-for kv in "${extra[@]}"; do
+for kv in ${extra[@]+"${extra[@]}"}; do
   case "$kv" in ANTHROPIC_API_KEY=*|ANTHROPIC_AUTH_TOKEN=*|CLAUDE_CODE_USE_BEDROCK=*|CLAUDE_CODE_USE_VERTEX=*|ANTHROPIC_BASE_URL=*)
     echo "bin/sandbox: refusing ${kv%%=*} — this project runs on the Claude subscription only" >&2; exit 1 ;;
   esac
 done
-exec env -i "${vars[@]}" "${extra[@]}" "$@"
+exec env -i "${vars[@]}" ${extra[@]+"${extra[@]}"} "$@"

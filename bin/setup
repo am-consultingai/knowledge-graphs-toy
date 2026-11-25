@@ -12,8 +12,9 @@ import sys
 from pathlib import Path
 
 P = Path(__file__).resolve().parent.parent
-if os.environ.get("HOME", "") != str(P / ".sandbox/home"):
-    os.execv(str(P / "bin/sandbox"), [str(P / "bin/sandbox"), "--", sys.executable, *sys.argv])
+PY = str(P / "tools/.venv-store/bin/python")
+if os.environ.get("HOME", "") != str(P / ".sandbox/home") or sys.executable != PY:
+    os.execv(str(P / "bin/sandbox"), [str(P / "bin/sandbox"), "--", PY, *sys.argv])
 ORG = json.loads((P / "org.json").read_text())
 GIT = {"GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1"}
 

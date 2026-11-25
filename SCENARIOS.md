@@ -9,7 +9,7 @@ contract graph (X-G4) — each with its own repo plus file access, no search. Ru
 
 | Scenario | Syntax graph | Compiler index (SCIP) | Contract graph |
 |---|---|---|---|
-| **T2** Same question, but the web app can't be built (no build config), so it can't be compiled. | ✓ 2/3 | ✗ 0/3 | ✗ 0/3 |
+| **T2** Same question, but the web app can't be built (no build config), so it can't be compiled. | ✓ 3/3 | ✗ 0/3 | ✗ 0/3 |
 | **T3** The library team asks: which code in other repos uses our hello()? (Four web-app files import the library; one uses hello; web-app also has its own hello.) | ✗ 0/3 | ✓ 3/3 | ✗ 0/3 |
 | **T4** The API team wants to delete the greeting field. Which client code would break? | ✗ 0/3 | ✗ 0/3 | ✓ 3/3 |
 
@@ -23,7 +23,7 @@ Measured = correct runs / runs in the latest `bin/verify` of that cell (Haiku).
 | | Question (asked from) | own repo | search | syntax | SCIP | contract | all |
 |---|---|---|---|---|---|---|---|
 | **T1** Structure, across repos | From the API team's repo: what does the web app's run() function call, and where do those functions live? (greet-api) | ✗ 0/3 | ✓ 3/3 | ✓ 3/3 | ✓ 3/3 | ✗ 0/3 | ✓ 3/3 |
-| **T2** Structure, when the repo can't be built | Same question, but the web app can't be built (no build config), so it can't be compiled. (greet-api) | ✗ 0/3 | ✓ 3/3 | ✓ 2/3 | ✗ 0/3 | ✗ 0/3 | ✓ 3/3 |
+| **T2** Structure, when the repo can't be built | Same question, but the web app can't be built (no build config), so it can't be compiled. (greet-api) | ✗ 0/3 | ✓ 3/3 | ✓ 3/3 | ✗ 0/3 | ✗ 0/3 | ✓ 3/3 |
 | **T3** Identity: which hello? | The library team asks: which code in other repos uses our hello()? (Four web-app files import the library; one uses hello; web-app also has its own hello.) (greet-lib) | ✗ 0/3 | ✓ 3/3 | ✗ 0/3 | ✓ 3/3 | ✗ 0/3 | ✓ 3/3 |
 | **T4** Interface: an API field | The API team wants to delete the greeting field. Which client code would break? (greet-api) | ✗ 0/3 | ✓ 3/3 | ✗ 0/3 | ✗ 0/3 | ✓ 3/3 | ✓ 3/3 |
 | **T5** Interface: an event | The API team emits a USER_GREETED event. Which other repos react to it, and how? (Three files register event handlers; only one handles USER_GREETED.) (greet-api) | ✗ 0/3 | ✓ 3/3 | ✗ 0/3 | ✗ 0/3 | ✓ 3/3 | ✓ 3/3 |

@@ -11,12 +11,16 @@ import argparse
 import collections
 import datetime
 import json
+import os
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 P = Path(__file__).resolve().parent.parent
+PY = str(P / "tools/.venv-store/bin/python")
+if sys.executable != PY:  # always the project's Python (macOS ships 3.9), set up by ./setup.sh
+    os.execv(PY, [PY, *sys.argv])
 sys.path.insert(0, str(P / "harness"))
 from grade import grade  # noqa: E402
 

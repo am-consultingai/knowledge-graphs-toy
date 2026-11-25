@@ -1,0 +1,49 @@
+# Fresh-clone check: ./setup.sh on Linux and macOS (Apple silicon + Intel), then the model-free checks.
+# No Claude token and no model calls (--no-login); bin/verify needs a real subscription and runs locally.
+name: setup
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  setup:
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-15: Apple silicon (arm64). macos-15-intel: x86_64, GitHub's last Intel image (supported to ~Aug 2027).
+        os: [ubuntu-latest, macos-15, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # macOS users run Apple's bash 3.2; make every script use it, not the runner's newer Homebrew bash.
+      - name: Use the system bash (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p "$RUNNER_TEMP/bash32"
+          ln -s /bin/bash "$RUNNER_TEMP/bash32/bash"
+          echo "$RUNNER_TEMP/bash32" >> "$GITHUB_PATH"
+
+      - name: Cache tool downloads
+        uses: actions/cache@v4
+        with:
+          path: tools/.downloads
+          key: downloads-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/versions.env') }}
+
+      - name: ./setup.sh --no-login
+        run: |
+          bash --version | head -1
+          ./setup.sh --no-login
+
+      - name: ./setup.sh --check (all installed, token missing is expected)
+        run: ./setup.sh --check --no-login || true
+
+      - name: Re-run is a no-op
+        run: ./setup.sh --no-login --no-build

@@ -1,10 +1,25 @@
 #!/usr/bin/env bash
-# Browser opener for the sign-in step only (used as $BROWSER by `bin/session login`).
-# Prints the link so it can always be opened by hand, then asks Windows to open it.
-url="${1:-}"
-[ -n "$url" ] || exit 1
-{ printf '\n  Sign-in link (open it in your browser if it does not open by itself):\n\n  %s\n\n' "$url" > /dev/tty; } 2>/dev/null || printf '%s\n' "$url"
-if [ -x /mnt/c/Windows/explorer.exe ]; then
-  /mnt/c/Windows/explorer.exe "$url" >/dev/null 2>&1 || true
+# Open a link or a local file in the user's browser: macOS, WSL (Windows browser) or desktop Linux.
+# Used as $BROWSER for the Claude sign-in step and by ./setup.sh to open core-3x3.html at the end.
+# Always prints what it opens, so it can be opened by hand if nothing happens.
+#
+#   bin/open-url <https://...|path/to/file.html>
+arg="${1:-}"
+[ -n "$arg" ] || exit 1
+case "$arg" in
+  http://*|https://*) is_file=false; msg="Sign-in link (open it in your browser if it does not open by itself)" ;;
+  *) [ -e "$arg" ] || { echo "bin/open-url: no such file: $arg" >&2; exit 1; }
+     arg="$(cd "$(dirname "$arg")" && pwd)/$(basename "$arg")"; is_file=true
+     msg="Opening (if no browser window appears, open this file yourself)" ;;
+esac
+{ printf '\n  %s:\n\n  %s\n\n' "$msg" "$arg" > /dev/tty; } 2>/dev/null || printf '%s\n' "$arg"
+
+if [ "$(uname -s)" = Darwin ]; then
+  /usr/bin/open "$arg" >/dev/null 2>&1 || true
+elif [ -x /mnt/c/Windows/explorer.exe ]; then          # WSL: hand it to Windows
+  if $is_file && command -v wslpath >/dev/null 2>&1; then arg="$(wslpath -w "$arg")"; fi
+  (cd /mnt/c && /mnt/c/Windows/explorer.exe "$arg") >/dev/null 2>&1 || true
+elif command -v xdg-open >/dev/null 2>&1; then
+  xdg-open "$arg" >/dev/null 2>&1 || true
 fi
 exit 0

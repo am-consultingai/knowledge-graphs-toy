@@ -23,6 +23,9 @@ import sys
 from pathlib import Path
 
 P = Path(__file__).resolve().parent.parent
+PY = str(P / "tools/.venv-store/bin/python")
+if sys.executable != PY:  # always the project's Python (macOS ships 3.9), set up by ./setup.sh
+    os.execv(PY, [PY, *sys.argv])
 # the Claude Code credential lives outside the project (see bin/sandbox); used here only to redact logs
 SECRETS = Path(os.environ.get("KG_SECRETS_FILE") or
                Path(pwd.getpwuid(os.getuid()).pw_dir) / ".config/claude/temp_creds/knowledge-graphs-toy.env")

@@ -43,6 +43,23 @@ code { font: 13px/1.4 ui-monospace, "Cascadia Code", Consolas, monospace; backgr
   padding: 1px 5px; border-radius: 4px; }
 .setup { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
 .setup ol { margin: 6px 0 0; padding-left: 20px; }
+a { color: var(--accent); }
+.intro { display: grid; gap: 14px; }
+.intro p, .intro li { max-width: 860px; }
+.ways { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.way { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.way h3 { margin: 0 0 4px; font-size: 16px; }
+.way .tag { font-size: 12px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: .04em; }
+.way pre { margin: 8px 0; padding: 8px 10px; background: var(--code-bg); border-radius: 6px; overflow-x: auto;
+  font: 12.5px/1.5 ui-monospace, "Cascadia Code", Consolas, monospace; }
+.way p { margin: 6px 0; font-size: 14px; }
+.steps { margin: 0; padding-left: 20px; } .steps li { margin: 4px 0; }
+.iso { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.iso .setup h3 { margin: 0 0 6px; font-size: 15px; }
+.iso ul { margin: 0; padding-left: 18px; font-size: 14px; } .iso li { margin: 4px 0; }
+.note { border-left: 3px solid var(--ok); background: var(--ok-bg); padding: 10px 14px; border-radius: 0 8px 8px 0;
+  font-size: 14px; max-width: 860px; }
+@media (max-width: 820px) { .ways, .iso { grid-template-columns: 1fr; } }
 
 .grid { display: grid; grid-template-columns: 170px repeat(3, 1fr); gap: 10px; }
 .colhead, .rowhead { font-weight: 600; padding: 8px 4px; }
@@ -121,7 +138,11 @@ svg .note.miss { fill: var(--no); font-weight: 600; }
 <body>
 <nav class="top" aria-label="Page sections"><div class="in">
   <span class="brand">Core 3x3</span>
-  <a href="#how">How it works</a>
+  <a href="#about">About</a>
+  <a href="#experiment">The experiment</a>
+  <a href="#run">Two ways to run</a>
+  <a href="#isolation">Isolation &amp; safety</a>
+  <a href="#how">Sessions</a>
   <a href="#matrix">Matrix</a>
   <a href="#graphs">Graphs</a>
   <a href="#g-syntax-card">· Syntax</a>
@@ -130,15 +151,123 @@ svg .note.miss { fill: var(--no); font-weight: 600; }
   <a href="#questions">Questions &amp; answers</a>
 </div></nav>
 <main>
-<h1>Core 3x3: one session per cell</h1>
-<p class="lead">Three scenarios, three graphs, and each scenario is answered correctly by exactly one graph.
-Each one-liner opens a live Claude session (Haiku) with that cell's tools, with the question already sent.
-The green-bordered cell in each row is the one expected to answer correctly.</p>
+<h1 id="about">Which code graph answers which question?</h1>
+<p class="lead">A small, fully reproducible experiment on code graphs for coding agents. Source and docs:
+<a href="https://github.com/am-consultingai/knowledge-graphs-toy">github.com/am-consultingai/knowledge-graphs-toy</a> · the talk: <a href="https://am-consultingai.github.io/knowledge-graphs-toy/">am-consultingai.github.io/knowledge-graphs-toy</a></p>
 
-<div class="setup" id="how">
+<div class="intro">
+<p>Coding agents increasingly get a <em>code graph</em> as a tool, but there are very different kinds, and each one can
+answer some questions and not others. This repo makes that concrete with a toy organisation of four tiny repos
+(about 60 lines of code: a Python GraphQL API, a TypeScript library, a web app and a mail app) and three graphs built
+over them:</p>
+<ul class="steps">
+  <li><b>Syntax graph</b> (Graphify, tree-sitter): files, functions, calls and imports. Needs no build, but cannot tell
+    which of two same-named functions a call really uses.</li>
+  <li><b>Compiler index</b> (SCIP): exactly which symbol every name refers to, across repos. Needs a project that builds.</li>
+  <li><b>Contract graph</b> (our extractor): which client code uses which API field, and who handles which event.
+    Knows nothing beyond declared APIs.</li>
+</ul>
+<p>Each scenario is one question that a team would really ask, built so that it has a known correct answer and so that
+the graphs disagree. The core of the experiment is a 3x3: three questions, three graphs, and each question is answered
+correctly by exactly one graph.</p>
+</div>
+
+<h2 id="experiment">How the experiment is performed</h2>
+<ol class="steps">
+  <li><b>Same question, same instructions, different tools.</b> Each cell of the matrix is a fresh Claude session
+    (Haiku) that starts inside one repo and can reach the other repos only through the tools of that cell's
+    configuration: the syntax graph, the compiler index or the contract graph.</li>
+  <li><b>An answer key per question.</b> Each scenario has a written answer key and, for every configuration, the
+    result we expect (correct or wrong), with the reason.</li>
+  <li><b>Independent grading.</b> A separate Claude Opus session with no tools sees only the question, the key and the
+    agent's final answer, and grades it correct or wrong.</li>
+  <li><b>Repeated, then compared with the expectation.</b> Each cell runs 3 times; a cell PASSES when the majority
+    result matches the expected one. Before any model runs, <code>bin/check</code> calls every graph tool directly
+    (no model) and asserts what each graph can and cannot return.</li>
+</ol>
+
+<h2 id="run">Two ways to run it</h2>
+<div class="ways">
+  <div class="way">
+    <span class="tag">1 · End to end</span>
+    <h3>Every combination, graded automatically</h3>
+    <pre>bin/verify --core      # the 3x3: 27 graded runs, ~3 min
+bin/verify             # 6 scenarios x 6 configurations x 3 = 108 runs</pre>
+    <p>Runs each scenario in each configuration headless, grades every answer and prints a PASS/FAIL table against
+    the expected results. Summaries go to <code>results/verify-*.md</code>; <code>bin/make-docs</code> copies the
+    latest numbers into <code>SCENARIOS.md</code> and into the badges on this page.</p>
+  </div>
+  <div class="way">
+    <span class="tag">2 · Manually, interactively</span>
+    <h3>One live Claude session, watch it work</h3>
+    <pre>bin/session X-G3 T3    # configuration, scenario
+bin/session list       # all of them</pre>
+    <p>Opens Claude Code in the terminal with one cell's tools and sends the question as the first message. You see
+    which tools it calls, what they return and how it reasons, and you can ask follow-ups. Each cell in the
+    <a href="#matrix">matrix below</a> has its command ready to copy. Type <code>/exit</code> to leave; the transcript
+    is saved in <code>results/sessions/</code>.</p>
+  </div>
+</div>
+
+<h2 id="isolation">How it is built: no leakage, no effect on your own setup</h2>
+<div class="iso">
+  <div class="setup">
+    <h3>Self-contained</h3>
+    <ul>
+      <li>Everything lives in this folder: <code>./setup.sh</code> installs pinned, checksum-verified tools into
+        <code>tools/</code> (Node, Python, Claude Code, the indexers). No global npm, pip or Homebrew installs.</li>
+      <li>Every command runs through <code>bin/sandbox</code>: an empty environment with an allowlist, and
+        <code>HOME</code>, temp, caches and the Claude config folder all pointing into <code>.sandbox/</code>.</li>
+      <li>Your own Claude Code setup (<code>~/.claude</code>: settings, CLAUDE.md, memory, plugins, MCP servers, hooks)
+        is never read or written. Auto-update, auto-memory and non-essential traffic are switched off.</li>
+      <li><code>bin/check-containment snapshot</code> / <code>compare</code> lists every file changed outside the
+        folder, so you can check this yourself.</li>
+    </ul>
+  </div>
+  <div class="setup">
+    <h3>No leakage between runs</h3>
+    <ul>
+      <li>Each run gets a fresh, separate home and Claude config, copied from its configuration in
+        <code>conditions/</code>; nothing carries over from one run to the next.</li>
+      <li>The agent can read only the one repo it starts in. Editing, writing, web access and sub-agents are denied;
+        other repos are reachable only through the configuration's <code>org</code> tools, and every tool call is
+        logged.</li>
+      <li>The repos are generated snapshots (<code>worlds/</code>); a run that changes any of their files is marked
+        invalid, and so is a run that was not on the subscription or not on the expected model. The grader sees the
+        question, the key and the final answer, not the agent's tools or reasoning.</li>
+    </ul>
+  </div>
+  <div class="setup">
+    <h3>A separate Claude login</h3>
+    <ul>
+      <li>The experiment signs in on its own: <code>./setup.sh</code> runs <code>claude setup-token</code> and keeps
+        that token only for these runs. Your normal Claude login is neither used nor changed.</li>
+      <li>It uses your Claude Pro/Max subscription only. An Anthropic API key is never passed on, so nothing is billed
+        to an API account.</li>
+    </ul>
+  </div>
+  <div class="setup">
+    <h3>Secrets stay put, and cleaning up is one command</h3>
+    <ul>
+      <li>The token is stored in one file outside the project,
+        <code>~/.config/claude/temp_creds/knowledge-graphs-toy.env</code>, readable only by you. It is handed only to
+        the Claude processes this experiment starts: never exported to your shell, never written into the project,
+        its logs, transcripts or git.</li>
+      <li>When you are done, <code>./setup.sh --clean</code> removes the token, the tools, the generated worlds, the
+        sandbox and the run logs. Then delete the folder: nothing else is left behind.</li>
+      <li>Last, revoke the token on your account: deleting the file does not invalidate it. Open
+        <a href="https://claude.ai/settings/claude-code">claude.ai/settings/claude-code</a> and revoke the
+        authorization token created on the day you ran <code>./setup.sh</code> (<code>--clean</code> prints the
+        date).</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="how">The core 3x3, one session per cell</h2>
+<div class="setup">
 <strong>How a session works</strong>
 <ol>
-  <li>Paste a one-liner into your WSL terminal. The banner shows the instructions the session is given (CLAUDE.md) and the question.</li>
+  <li>Paste a one-liner into a terminal. The banner shows the instructions the session is given (CLAUDE.md) and the question.</li>
   <li>Claude starts with the question as its first message. Watch which <code>org</code> tools it calls.</li>
   <li>Compare its answer with the answer key below. Type <code>/exit</code> to leave; the transcript is saved to <code>results/sessions/</code>.</li>
   <li>For a graded PASS/FAIL instead, run <code>bin/verify T3 --configs X-G3 --reps 1</code> (same scenario/configuration names).</li>
@@ -238,7 +367,14 @@ questions; config-file nodes left out). Every box and arrow below is a row the t
 </main>
 
 <script>
-const DIR = "/home/am/projects/learning/salesforce/knowledge-graphs-toy";
+// The project folder, read from this page's own address, so the copied commands work in any clone:
+// file:///Users/me/kg/core-3x3.html (macOS / Linux) or file://wsl.localhost/Ubuntu/home/me/kg/... (Windows browser on WSL).
+const DIR = (() => {
+  if (location.protocol !== "file:") return "<project folder>";
+  let dir = decodeURIComponent(location.pathname).replace(/\/[^/]*$/, "");
+  if (/^wsl(\.localhost|\$)$/i.test(location.hostname)) dir = dir.replace(/^\/[^/]+/, "");  // drop the distro name
+  return /^[\w@%+=:,./-]+$/.test(dir) ? dir : `'${dir.replace(/'/g, `'\\''`)}'`;
+})();
 const COLS = [["X-G2", "Syntax graph"], ["X-G3", "Compiler index (SCIP)"], ["X-G4", "Contract graph"]];
 const CORRECT = {
  "T2": "<code>render</code> → <code>web-app/src/render.ts:1</code> and <code>hello</code> → greet-lib <code>src/index.ts:1</code>, both called on <code>main.ts:5</code>.",
@@ -415,11 +551,13 @@ drawGraph("g-contract", {
   edges: [["op", "fu", "imports"], ["fu", "fG", "ref", "same Type.field"], ["eS", "wh", "ref", "same event name"]],
 });
 
-// Last measured run (bin/verify --core): correct runs out of 3.
-const MEASURED = {"T2 X-G2": "2/3", "T2 X-G3": "0/3", "T2 X-G4": "0/3",
+// BEGIN measured (generated by bin/make-docs from results/verify-*.json; do not edit by hand)
+// Latest bin/verify result per core cell: correct runs / runs.
+const MEASURED = {"T2 X-G2": "3/3", "T2 X-G3": "0/3", "T2 X-G4": "0/3",
   "T3 X-G2": "0/3", "T3 X-G3": "3/3", "T3 X-G4": "0/3",
   "T4 X-G2": "0/3", "T4 X-G3": "0/3", "T4 X-G4": "3/3"};
 const MEASURED_LABEL = "Last verify (2026-11-24, Haiku, all cells PASS)";
+// END measured
 
 const grid = document.getElementById("grid");
 for (const [sid, title, sub, cells] of ROWS) {

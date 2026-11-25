@@ -46,7 +46,13 @@ def step(name, fn):
     except Exception as e:
         ok = False; err = str(e)[-400:]
     result[name] = {"ok": ok, "seconds": round(time.time() - t, 1), "error": err}
-    print(f"  {repo} {name}: {'ok' if ok else 'FAILED'} ({result[name]['seconds']}s){(' — ' + err) if err else ''}")
+    removed = ORG["worlds"].get(world, {}).get("remove", {}).get(repo, [])
+    if ok:
+        print(f"  {repo} {name}: ok ({result[name]['seconds']}s)")
+    elif removed:  # this world takes files away on purpose (e.g. nobuild): the failure is the point of the scenario
+        print(f"  {repo} {name}: not built (expected: world {world} removes {', '.join(removed)}) — {err}")
+    else:
+        print(f"  {repo} {name}: FAILED ({result[name]['seconds']}s) — {err}")
 
 
 def run(cmd, env=None):

@@ -5,10 +5,15 @@ Each is a Claude Code config folder copied fresh for every session. Placeholder 
   {{WORKSPACE}}  the repo the session starts in
 """
 import json
+import sys
+import os
 import shutil
 from pathlib import Path
 
 P = Path(__file__).resolve().parent.parent
+PY = str(P / "tools/.venv-store/bin/python")
+if sys.executable != PY:  # always the project's Python (macOS ships 3.9), set up by ./setup.sh
+    os.execv(PY, [PY, *sys.argv])
 ORG = json.loads((P / "org.json").read_text())
 COND = P / "conditions"
 DENY = ["Edit", "Write", "NotebookEdit", "Agent", "WebFetch", "WebSearch", "Bash(env*)", "Bash(printenv*)", "Bash(set)",

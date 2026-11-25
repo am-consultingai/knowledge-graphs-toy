@@ -1,0 +1,6 @@
+{
+  "name": "kg-toy-claude-code", "private": true,
+  "dependencies": {
+    "@anthropic-ai/claude-code": "2.1.331"
+  }
+}
